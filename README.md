@@ -17,7 +17,7 @@ Display for counting Table Tennis Matches
 
 * Powered by 12V Lead Acid Battery
 
-* DC-DC Conerter for 3.3V
+* DC-DC Converter for 3.3V
 
 * DC-DC Converter for 9V  (Needed by seven segment digits)
 
