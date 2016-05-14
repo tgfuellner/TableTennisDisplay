@@ -4,16 +4,16 @@ Display for counting Table Tennis Matches
 ## Components of the Display
 
 * Attiny2313 
-* * controls the 6 seven segment digits
-* * Receives data from esp8266
-* * Runs with 3.3V
+ * controls the 6 seven segment digits
+ * Receives data from esp8266
+ * Runs with 3.3V
 
 * esp8266
-* * Send data to Attiny
-* * queries state of the buttons
-* * Can be controled by mobile phone (mqtt or http)
-* * implements counting behavieour
-* * Runs with 3.3V
+ * Send data to Attiny
+ * queries state of the buttons
+ * Can be controled by mobile phone (mqtt or http)
+ * implements counting behavieour
+ * Runs with 3.3V
 
 * Powered by 12V Lead Acid Battery
 
