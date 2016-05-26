@@ -3,13 +3,8 @@ Display for counting Table Tennis Matches
 
 ## Components of the Display
 
-* Attiny2313 
- * controlls the 6 seven segment digits
- * Receives data from esp8266
- * Runs with 3.3V
-
-* esp8266
- * Send data to Attiny
+* esp8266 (Wemos D1 mini)
+ * Send data to LED Driver Shift Register TLC5916IN 
  * queries state of the buttons
  * controlls the OLED display
  * Can be controled by mobile phone (mqtt or http)
@@ -20,13 +15,14 @@ Display for counting Table Tennis Matches
 
 * DC-DC Converter for 3.3V
 
-* DC-DC Converter for 9V  (Needed by seven segment digits)
-
 * Seven Segment Displays
  * 4 Big red LED common anode for the points
  * 2 smaller green LED common kathode for the games
 
-* Small OLED Display for feedback and guidance for the umpire
+* LED Driver Shift Register TLC5916IN 
+ * [Datasheet](http://docs-europe.electrocomponents.com/webdocs/12f7/0900766b812f7b59.pdf)
+
+* Small OLED Display sdd1306 for umpire feedback and guidance
 
 ## Counting behaviour
 
