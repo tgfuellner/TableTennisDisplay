@@ -39,7 +39,9 @@ Display for counting Table Tennis Matches
 ## Setup
 
 * Setup menu right after powering the display on
-* default: 3 games of 5
-* 2 of 3
-* 4 of 7
-* 5 of 9
+* Number of games to play:
+ * default: 3 games of 5
+ * 2 of 3
+ * 4 of 7
+ * 5 of 9
+* Which side serves first
