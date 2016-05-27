@@ -22,22 +22,67 @@ Adafruit_SSD1306 display(OLED_RESET);
 #endif
 
 OneButton buttonRight(D3, true); // second Parameter true means active Low with internal Pullup
-OneButton buttomLeft(D4, true);
+OneButton buttonLeft(D4, true);
 
 boolean leftStartetToServe = true;
 
-class Score {
-    int gamesLeft;
-    int gamesRight;
-    int pointsLeft;
-    int pointsRight;
+void gameOverSwapSide();
 
-    public: Score() {
+class ScoreOneSide {
+    public:
+    int games;
+    int points;
+    ScoreOneSide *otherSide;
+
+    boolean winsGame() {
+        if (points > 10 && points - otherSide->points > 1)
+            return true;
+        return false;
+    }
+
+    void handleGameDecision() {
+        ScoreOneSide *winner;
+        if (winsGame()) {
+            games++;
+            winner = this;
+        } else if (otherSide->winsGame()) {
+            otherSide->games++;
+            winner = otherSide;
+        } else {
+            return;
+        }
+
+        display.setFont(NULL);
+        display.setCursor(10,55);
+        display.print("Taste lang halten");
+        buttonLeft.attachLongPressStart(gameOverSwapSide);
+        buttonRight.attachLongPressStart(gameOverSwapSide);
+    }
+};
+
+class Score {
+    public:
+    ScoreOneSide left;
+    ScoreOneSide right;
+
+    Score() {
+        left.otherSide = &right;
+        right.otherSide = &left;
+    }
+
+    void gameOverSwapSide() {
+        int games = left.games;
+        left.games = right.games;
+        right.games = games;
+        left.points = 0;
+        right.points = 0;
+        display.clearDisplay();
+        showScore();
     }
 
     boolean leftHasToServe() {
         int player;
-        int sumOfPoints = pointsRight + pointsLeft;
+        int sumOfPoints = left.points + right.points;
         if (sumOfPoints < 20) 
             // First player if even
             player = int(sumOfPoints / 2) % 2;
@@ -45,7 +90,7 @@ class Score {
             player = sumOfPoints % 2;
 
         // Every other game server changes
-        player = player + gamesRight+gamesLeft - 1;
+        player = player + left.games+right.games - 1;
         if (leftStartetToServe) 
             return player%2;
         else
@@ -53,24 +98,23 @@ class Score {
     }
 
     void showScore() {
-        display.clearDisplay();
         display.setFont(&FreeSans24pt7b);
         
-        if (pointsLeft < 10)
+        if (left.points < 10)
           display.setCursor(31,32);
         else
           display.setCursor(5,32);
 
-        display.print(pointsLeft);
+        display.print(left.points);
         display.print(':');
-        display.print(pointsRight);
+        display.print(right.points);
 
         // Games in a smaller font
         display.setFont(&FreeSans12pt7b);
-        display.setCursor(0,50);
-        display.print(gamesLeft);
-        display.setCursor(115,50);
-        display.print(gamesRight);
+        display.setCursor(2,50);
+        display.print(left.games);
+        display.setCursor(113,50);
+        display.print(right.games);
 
         // Indicate who has to serve
         if (leftHasToServe())
@@ -81,12 +125,17 @@ class Score {
         display.display();
     }
 
-    void leftCount(int n=1) {
-        pointsLeft += n;
-        showScore();
-    }
-    void rightCount(int n=1) {
-        pointsRight += n;
+    void count(ScoreOneSide &side, int n=1) {
+        if (side.points == 0 && n <= 0)
+             return;  // No negative points
+
+        if (side.winsGame() && n<0)
+            side.games--;
+
+        side.points += n;
+
+        display.clearDisplay();
+        side.handleGameDecision();
         showScore();
     }
 };
@@ -94,16 +143,21 @@ class Score {
 Score theScore;
 
 void clickRight() {
-  theScore.rightCount();
+  theScore.count(theScore.right);
 }
 void clickLeft() {
-  theScore.leftCount();
+  theScore.count(theScore.left);
 }
 void dclickRight() {
-  theScore.rightCount(-1);
+  theScore.count(theScore.right, -1);
 }
 void dclickLeft() {
-  theScore.leftCount(-1);
+  theScore.count(theScore.left, -1);
+}
+void gameOverSwapSide() {
+  buttonLeft.attachLongPressStart(NULL);
+  buttonRight.attachLongPressStart(NULL);
+  theScore.gameOverSwapSide();
 }
 
 void setup()   {                
@@ -122,16 +176,16 @@ void setup()   {
   theScore.showScore();
 
   buttonRight.attachClick(clickRight);
-  buttomLeft.attachClick(clickLeft);
+  buttonLeft.attachClick(clickLeft);
   buttonRight.attachDoubleClick(dclickRight);
-  buttomLeft.attachDoubleClick(dclickLeft);
+  buttonLeft.attachDoubleClick(dclickLeft);
   buttonRight.setClickTicks(300);
-  buttomLeft.setClickTicks(300);
+  buttonLeft.setClickTicks(300);
 }
 
 void loop() {
     buttonRight.tick();
-    buttomLeft.tick();
+    buttonLeft.tick();
     delay(10);
 }
 
