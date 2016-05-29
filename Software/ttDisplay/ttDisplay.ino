@@ -38,25 +38,22 @@ class ScoreOneSide {
     ScoreOneSide *otherSide;
 
     boolean winsGame() {
-        if (points > 10 && points - otherSide->points > 1)
+        if (points > 10 && otherSide->points > 9 && points - otherSide->points == 2)
             return true;
+        if (points == 11 && otherSide->points <= 9)
+            return true;
+
         return false;
     }
 
     void handleGameDecision() {
-        if (winsGame()) {
-            games++;
-        } else if (otherSide->winsGame()) {
-            otherSide->games++;
-        } else {
-            return;
+        if (winsGame() || otherSide->winsGame()) {
+            display.setFont(NULL);
+            display.setCursor(10,55);
+            display.print("Taste lang halten");
+            buttonLeft.attachLongPressStart(gameOverSwapSide);
+            buttonRight.attachLongPressStart(gameOverSwapSide);
         }
-
-        display.setFont(NULL);
-        display.setCursor(10,55);
-        display.print("Taste lang halten");
-        buttonLeft.attachLongPressStart(gameOverSwapSide);
-        buttonRight.attachLongPressStart(gameOverSwapSide);
     }
 };
 
@@ -81,7 +78,15 @@ class Score {
         right.otherSide = &left;
     }
 
+    void incrGames() {
+        if (left.winsGame())
+            left.games++;
+        else
+            right.games++;
+    }
+
     void gameOverSwapSide() {
+        incrGames();
         int games = left.games;
         left.games = right.games;
         right.games = games;
@@ -136,8 +141,8 @@ class Score {
         if (side.points == 0 && n <= 0)
              return;  // No negative points
 
-        if (side.winsGame() && n<0)
-            side.games--;
+        if (side.winsGame() && n>0)
+            n = 0;
 
         side.points += n;
 
@@ -149,11 +154,25 @@ class Score {
 
 Score theScore;
 
+#define OK "Ok"
+#define OKx 3
+#define OKy 55
+#define WE "Wechsel"
+#define WEx 47
+#define WEy 55
+
 void showSetupMenu() {
-  display.setCursor(3,55);
-  display.print("Ok");
-  display.setCursor(43,55);
-  display.print("Wechseln");
+  int16_t x,y;
+  uint16_t w,h;
+
+  display.getTextBounds(OK,OKx,OKy,&x,&y,&w,&h);
+  display.drawRect(x-2,y-2,w+4,h+4,WHITE);
+  display.setCursor(OKx,OKy);
+  display.print(OK);
+  display.getTextBounds(WE,WEx,WEy,&x,&y,&w,&h);
+  display.drawRect(x-2,y-2,w+4,h+4,WHITE);
+  display.setCursor(WEx,WEy);
+  display.print(WE);
 }
 
 void showNumberOfGames(int gamesNeededToWinMatch) {
@@ -162,7 +181,6 @@ void showNumberOfGames(int gamesNeededToWinMatch) {
   display.clearDisplay();
   display.setCursor(3,15);
   display.print(menuTexts[gamesNeededToWinMatch-1]);
-  display.setTextColor(WHITE);
 
   showSetupMenu();
   display.display();
@@ -191,7 +209,6 @@ void serverSetup() {
   display.clearDisplay();
   leftStartetToServe = true;
   showServer(leftStartetToServe);
-  display.setTextColor(WHITE);
   display.setFont(&FreeSans9pt7b);
   display.setCursor(3,15);
   display.print("Aufschlag?");
@@ -227,13 +244,12 @@ void dclickLeft() {
   theScore.count(theScore.left, -1);
 }
 void gameOverSwapSide() {
-  noLongPressAction();
-  theScore.gameOverSwapSide();
+    noLongPressAction();
+    theScore.gameOverSwapSide();
 }
 
 void startCount() {
   display.clearDisplay();
-  display.setTextColor(WHITE);
   theScore.showScore();
 
   buttonRight.attachClick(clickRight);
@@ -253,6 +269,7 @@ void setup()   {
 
   // text display tests
   display.setTextSize(1);
+  display.setTextColor(WHITE);
 
   buttonRight.setClickTicks(300);
   buttonLeft.setClickTicks(300);
