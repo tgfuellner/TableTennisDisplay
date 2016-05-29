@@ -12,6 +12,7 @@ All text above, and the splash screen must be included in any redistribution
 #include <Adafruit_SSD1306.h>
 #include <Fonts/FreeSans24pt7b.h>
 #include <Fonts/FreeSans12pt7b.h>
+#include <Fonts/FreeSans9pt7b.h>
 #include <OneButton.h>
 
 #define OLED_RESET -1
@@ -24,9 +25,11 @@ Adafruit_SSD1306 display(OLED_RESET);
 OneButton buttonRight(D3, true); // second Parameter true means active Low with internal Pullup
 OneButton buttonLeft(D4, true);
 
-boolean leftStartetToServe = true;
+boolean leftStartetToServe;
+int gamesNeededToWinMatch;
 
 void gameOverSwapSide();
+void startCount();
 
 class ScoreOneSide {
     public:
@@ -41,13 +44,10 @@ class ScoreOneSide {
     }
 
     void handleGameDecision() {
-        ScoreOneSide *winner;
         if (winsGame()) {
             games++;
-            winner = this;
         } else if (otherSide->winsGame()) {
             otherSide->games++;
-            winner = otherSide;
         } else {
             return;
         }
@@ -59,6 +59,17 @@ class ScoreOneSide {
         buttonRight.attachLongPressStart(gameOverSwapSide);
     }
 };
+
+void showServer(boolean isLeft) {
+  if (isLeft) {
+    display.drawFastVLine(0, 0, 64, 1);
+    display.drawFastVLine(127, 0, 64, 0);
+  } else {
+    display.drawFastVLine(0, 0, 64, 0);
+    display.drawFastVLine(127, 0, 64, 1);
+  }
+  display.display();
+}
 
 class Score {
     public:
@@ -116,11 +127,7 @@ class Score {
         display.setCursor(113,50);
         display.print(right.games);
 
-        // Indicate who has to serve
-        if (leftHasToServe())
-            display.drawFastVLine(0, 0, 64, 1);
-        else
-            display.drawFastVLine(127, 0, 64, 1);
+        showServer(leftHasToServe());
 
         display.display();
     }
@@ -142,36 +149,90 @@ class Score {
 
 Score theScore;
 
+void showSetupMenu() {
+  display.setCursor(3,55);
+  display.print("Ok");
+  display.setCursor(43,55);
+  display.print("Wechseln");
+}
+
+void showNumberOfGames(int gamesNeededToWinMatch) {
+  static char*menuTexts[] = {"1 von 1?", "2 von 3?", "3 von 5?",
+                             "4 von 7?", "5 von 9?"};
+  display.clearDisplay();
+  display.setCursor(3,15);
+  display.print(menuTexts[gamesNeededToWinMatch-1]);
+  display.setTextColor(WHITE);
+
+  showSetupMenu();
+  display.display();
+}
+
+void changeNumberOfGames() {
+  gamesNeededToWinMatch++;
+  if (gamesNeededToWinMatch > 5)
+      gamesNeededToWinMatch = 1;
+  showNumberOfGames(gamesNeededToWinMatch);
+}
+
+void numberOfGamesSetup() {
+  gamesNeededToWinMatch = 3;
+  showNumberOfGames(gamesNeededToWinMatch);
+  buttonLeft.attachClick(startCount);
+  buttonRight.attachClick(changeNumberOfGames);
+}
+
+void changeServer() {
+  leftStartetToServe = !leftStartetToServe;
+  showServer(leftStartetToServe);
+}
+
+void serverSetup() {
+  display.clearDisplay();
+  leftStartetToServe = true;
+  showServer(leftStartetToServe);
+  display.setTextColor(WHITE);
+  display.setFont(&FreeSans9pt7b);
+  display.setCursor(3,15);
+  display.print("Aufschlag?");
+
+  showSetupMenu();
+  display.display();
+
+  buttonLeft.attachClick(numberOfGamesSetup);
+  buttonRight.attachClick(changeServer);
+}
+
+
+
+void noLongPressAction() {
+  buttonLeft.attachLongPressStart(NULL);
+  buttonRight.attachLongPressStart(NULL);
+}
+
 void clickRight() {
+  noLongPressAction();
   theScore.count(theScore.right);
 }
 void clickLeft() {
+  noLongPressAction();
   theScore.count(theScore.left);
 }
 void dclickRight() {
+  noLongPressAction();
   theScore.count(theScore.right, -1);
 }
 void dclickLeft() {
+  noLongPressAction();
   theScore.count(theScore.left, -1);
 }
 void gameOverSwapSide() {
-  buttonLeft.attachLongPressStart(NULL);
-  buttonRight.attachLongPressStart(NULL);
+  noLongPressAction();
   theScore.gameOverSwapSide();
 }
 
-void setup()   {                
-  Serial.begin(9600);
-
-  // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
-  // init done
-  
-  // Clear the buffer.
+void startCount() {
   display.clearDisplay();
-
-  // text display tests
-  display.setTextSize(1);
   display.setTextColor(WHITE);
   theScore.showScore();
 
@@ -179,8 +240,28 @@ void setup()   {
   buttonLeft.attachClick(clickLeft);
   buttonRight.attachDoubleClick(dclickRight);
   buttonLeft.attachDoubleClick(dclickLeft);
+}
+
+
+void setup()   {                
+  //Serial.begin(9600);
+
+  // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
+  // init done
+  
+
+  // text display tests
+  display.setTextSize(1);
+
   buttonRight.setClickTicks(300);
   buttonLeft.setClickTicks(300);
+
+  // Start Options
+  serverSetup();  // Button Method calls:
+     // numberOfGamesSetup() which calls:
+     // startCount()
+
 }
 
 void loop() {
