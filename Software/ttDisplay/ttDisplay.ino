@@ -28,7 +28,6 @@ OneButton buttonLeft(D4, true);
 boolean leftStartetToServe;
 int gamesNeededToWinMatch;
 
-boolean sideChangedInLastGame();
 void gameOverSwapSide();
 void lastGameSwapSide();
 void startCount();
@@ -48,30 +47,6 @@ class ScoreOneSide {
         return false;
     }
 
-    void showChangeSides() {
-        display.setFont(NULL);
-        display.setCursor(25,45);
-        display.print("Seitenwechsel");
-        display.setCursor(10,55);
-        display.print("Taste lang halten");
-    }
-
-    void handleGameDecision() {
-        if (winsGame() || otherSide->winsGame()) {
-            showChangeSides();
-            buttonLeft.attachLongPressStart(gameOverSwapSide);
-            buttonRight.attachLongPressStart(gameOverSwapSide);
-            return;
-        }
-
-        if (games + otherSide->games == gamesNeededToWinMatch - 1
-            && (points >= 5 || otherSide->points >=5)
-            && !sideChangedInLastGame() ) {
-            showChangeSides();
-            buttonLeft.attachLongPressStart(lastGameSwapSide);
-            buttonRight.attachLongPressStart(lastGameSwapSide);
-        }
-    }
 };
 
 void showServer(boolean isLeft) {
@@ -174,6 +149,41 @@ class Score {
         display.display();
     }
 
+    void showChangeSides() {
+        display.setFont(NULL);
+        display.setCursor(25,45);
+        display.print("Seitenwechsel");
+        display.setCursor(10,55);
+        display.print("Taste lang halten");
+    }
+
+    boolean isLastGame() {
+        if (left.games + right.games == gamesNeededToWinMatch - 1)
+            return true;
+
+        return false;
+    }
+
+    void handleGameDecision() {
+        if (isLastGame()
+                && (left.points >= 5 || right.points >=5)
+                && !sideChanged ) {
+            showChangeSides();
+            buttonLeft.attachLongPressStart(::lastGameSwapSide);
+            buttonRight.attachLongPressStart(::lastGameSwapSide);
+            return;
+        }
+
+        if (left.winsGame() || right.winsGame()) {
+            if (isLastGame()) {
+            }
+
+            showChangeSides();
+            buttonLeft.attachLongPressStart(::gameOverSwapSide);
+            buttonRight.attachLongPressStart(::gameOverSwapSide);
+        }
+    }
+
     void count(ScoreOneSide &side, int n=1) {
         if (side.points == 0 && n <= 0)
              return;  // No negative points
@@ -184,15 +194,12 @@ class Score {
         side.points += n;
 
         display.clearDisplay();
-        side.handleGameDecision();
+        handleGameDecision();
         showScore();
     }
 };
 
 Score theScore;
-boolean sideChangedInLastGame() {
-    return theScore.sideChanged;
-}
 
 #define OK "Ok"
 #define OKx 3
