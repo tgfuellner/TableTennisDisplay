@@ -25,12 +25,37 @@ Adafruit_SSD1306 display(OLED_RESET);
 OneButton buttonRight(D3, true); // second Parameter true means active Low with internal Pullup
 OneButton buttonLeft(D4, true);
 
+// Configured at startup:
 boolean leftStartetToServe;
 int gamesNeededToWinMatch;
+
+// The Result:
+const int MAX_GAMES = 9;
+const int END_MARK = -1000;
+
+// Only points of Loser are stored
+// If the player which startet to Serve wins, we habe positive values
+// otherwise negative.
+// 11:4 ==> 4
+// 8:11 ==> -8
+// 14:12 ==> 12
+int resultPlayerStartetToServe[MAX_GAMES+1];
 
 void gameOverSwapSide();
 void lastGameSwapSide();
 void startCount();
+void showResult();
+
+void showServer(boolean isLeft) {
+  if (isLeft) {
+    display.drawFastVLine(0, 0, 64, 1);
+    display.drawFastVLine(127, 0, 64, 0);
+  } else {
+    display.drawFastVLine(0, 0, 64, 0);
+    display.drawFastVLine(127, 0, 64, 1);
+  }
+  display.display();
+}
 
 class ScoreOneSide {
     public:
@@ -48,17 +73,6 @@ class ScoreOneSide {
     }
 
 };
-
-void showServer(boolean isLeft) {
-  if (isLeft) {
-    display.drawFastVLine(0, 0, 64, 1);
-    display.drawFastVLine(127, 0, 64, 0);
-  } else {
-    display.drawFastVLine(0, 0, 64, 0);
-    display.drawFastVLine(127, 0, 64, 1);
-  }
-  display.display();
-}
 
 class Score {
     public:
@@ -78,7 +92,28 @@ class Score {
             right.games++;
     }
 
+    void storeResult() {
+        int totalPlayedGames = left.games + right.games;
+
+        resultPlayerStartetToServe[totalPlayedGames] = 
+                    (left.points > right.points) ? right.points : -left.points;
+
+        if (!leftStartetToServe)
+            resultPlayerStartetToServe[totalPlayedGames] *= -1;
+
+        if (sideChanged)
+            resultPlayerStartetToServe[totalPlayedGames] *= -1;
+
+        if (totalPlayedGames % 2 == 1)
+            resultPlayerStartetToServe[totalPlayedGames] *= -1;
+
+        // Mark end of result:
+        resultPlayerStartetToServe[totalPlayedGames+1] = END_MARK;
+        resultPlayerStartetToServe[totalPlayedGames+1] = END_MARK;
+    }
+
     void gameOverSwapSide() {
+        storeResult();
         incrGames();
         int games = left.games;
         left.games = right.games;
@@ -114,15 +149,10 @@ class Score {
         else
             player = sumOfPoints % 2;
 
-        // Every other game server changes
-        player = player + left.games+right.games - 1;
-        if (sideChanged)
-            player++;
-
-        if (leftStartetToServe) 
-            return player%2;
-        else
+        if (leftStartetToServe && !sideChanged) 
             return !player%2;
+        else
+            return player%2;
     }
 
     void showScore() {
@@ -149,38 +179,50 @@ class Score {
         display.display();
     }
 
-    void showChangeSides() {
+    void showLongPressMenu(char *message) {
         display.setFont(NULL);
         display.setCursor(25,45);
-        display.print("Seitenwechsel");
+        display.print(message);
         display.setCursor(10,55);
         display.print("Taste lang halten");
     }
 
+    boolean isLastPossibleGame() {
+        if (left.games + right.games == gamesNeededToWinMatch*2 - 2)
+            return true;
+
+        return false;
+    }
+
     boolean isLastGame() {
-        if (left.games + right.games == gamesNeededToWinMatch - 1)
+        if (left.winsGame() && left.games == gamesNeededToWinMatch-1)
+            return true;
+        if (right.winsGame() && right.games == gamesNeededToWinMatch-1)
             return true;
 
         return false;
     }
 
     void handleGameDecision() {
-        if (isLastGame()
-                && (left.points >= 5 || right.points >=5)
-                && !sideChanged ) {
-            showChangeSides();
-            buttonLeft.attachLongPressStart(::lastGameSwapSide);
-            buttonRight.attachLongPressStart(::lastGameSwapSide);
+        if (left.winsGame() || right.winsGame()) {
+            if (isLastGame()) {
+                showLongPressMenu("   Fertig");
+                buttonLeft.attachLongPressStart(showResult);
+                buttonRight.attachLongPressStart(showResult);
+                return;
+            }
+
+            showLongPressMenu("Seitenwechsel");
+            buttonLeft.attachLongPressStart(::gameOverSwapSide);
+            buttonRight.attachLongPressStart(::gameOverSwapSide);
             return;
         }
 
-        if (left.winsGame() || right.winsGame()) {
-            if (isLastGame()) {
-            }
-
-            showChangeSides();
-            buttonLeft.attachLongPressStart(::gameOverSwapSide);
-            buttonRight.attachLongPressStart(::gameOverSwapSide);
+        if (isLastPossibleGame() && (left.points >= 5 || right.points >=5) && !sideChanged ) {
+            showLongPressMenu("Seitenwechsel");
+            buttonLeft.attachLongPressStart(::lastGameSwapSide);
+            buttonRight.attachLongPressStart(::lastGameSwapSide);
+            return;
         }
     }
 
@@ -200,6 +242,45 @@ class Score {
 };
 
 Score theScore;
+
+void showExpandedPoints(int r) {
+  if (r > 0) {
+      display.print((r>9) ? r+2 : 11);
+      display.print(":");
+      display.print(r);
+  } else {
+      r *= -1;
+      display.print(r);
+      display.print(":");
+      display.print((r>9) ? r+2 : 11);
+  }
+}
+
+void showResult() {
+  theScore.storeResult();
+  display.clearDisplay();
+  display.setFont(&FreeSans9pt7b);
+  display.setCursor(0,15);
+  if (theScore.left.games+theScore.right.games > 6) {
+      for (int i=0; resultPlayerStartetToServe[i] != END_MARK; i++) {
+          if (i>0 && i%3 == 0) 
+              display.print(",\n");
+          display.print(resultPlayerStartetToServe[i]);
+          if (resultPlayerStartetToServe[i+1] != END_MARK) 
+              display.print(", ");
+      }
+  } else {
+      for (int i=0; resultPlayerStartetToServe[i] != END_MARK; i++) {
+          if (i>0 && i%2 == 0) 
+              display.print("\n");
+          showExpandedPoints(resultPlayerStartetToServe[i]);
+          if (resultPlayerStartetToServe[i+1] != END_MARK) 
+              display.print(", ");
+      }
+  }
+  display.display();
+}
+
 
 #define OK "Ok"
 #define OKx 3
@@ -311,7 +392,7 @@ void startCount() {
 
 
 void setup()   {                
-  //Serial.begin(9600);
+  //Serial.begin(9600);  Serial.println("Start");
 
   // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
