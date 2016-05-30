@@ -28,7 +28,9 @@ OneButton buttonLeft(D4, true);
 boolean leftStartetToServe;
 int gamesNeededToWinMatch;
 
+boolean sideChangedInLastGame();
 void gameOverSwapSide();
+void lastGameSwapSide();
 void startCount();
 
 class ScoreOneSide {
@@ -46,13 +48,28 @@ class ScoreOneSide {
         return false;
     }
 
+    void showChangeSides() {
+        display.setFont(NULL);
+        display.setCursor(25,45);
+        display.print("Seitenwechsel");
+        display.setCursor(10,55);
+        display.print("Taste lang halten");
+    }
+
     void handleGameDecision() {
         if (winsGame() || otherSide->winsGame()) {
-            display.setFont(NULL);
-            display.setCursor(10,55);
-            display.print("Taste lang halten");
+            showChangeSides();
             buttonLeft.attachLongPressStart(gameOverSwapSide);
             buttonRight.attachLongPressStart(gameOverSwapSide);
+            return;
+        }
+
+        if (games + otherSide->games == gamesNeededToWinMatch - 1
+            && (points >= 5 || otherSide->points >=5)
+            && !sideChangedInLastGame() ) {
+            showChangeSides();
+            buttonLeft.attachLongPressStart(lastGameSwapSide);
+            buttonRight.attachLongPressStart(lastGameSwapSide);
         }
     }
 };
@@ -72,6 +89,7 @@ class Score {
     public:
     ScoreOneSide left;
     ScoreOneSide right;
+    boolean sideChanged = false;
 
     Score() {
         left.otherSide = &right;
@@ -96,6 +114,22 @@ class Score {
         showScore();
     }
 
+    void lastGameSwapSide() {
+        int tmp = left.games;
+
+        left.games = right.games;
+        right.games = tmp;
+
+        tmp = left.points;
+        left.points = right.points;
+        right.points = tmp;
+
+        sideChanged = true;
+
+        display.clearDisplay();
+        showScore();
+    }
+
     boolean leftHasToServe() {
         int player;
         int sumOfPoints = left.points + right.points;
@@ -107,6 +141,9 @@ class Score {
 
         // Every other game server changes
         player = player + left.games+right.games - 1;
+        if (sideChanged)
+            player++;
+
         if (leftStartetToServe) 
             return player%2;
         else
@@ -153,6 +190,9 @@ class Score {
 };
 
 Score theScore;
+boolean sideChangedInLastGame() {
+    return theScore.sideChanged;
+}
 
 #define OK "Ok"
 #define OKx 3
@@ -246,6 +286,10 @@ void dclickLeft() {
 void gameOverSwapSide() {
     noLongPressAction();
     theScore.gameOverSwapSide();
+}
+void lastGameSwapSide() {
+    noLongPressAction();
+    theScore.lastGameSwapSide();
 }
 
 void startCount() {
