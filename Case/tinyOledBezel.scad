@@ -10,22 +10,23 @@ OLED_XLENGTH=27.6 + CLEARANCE;
 OLED_YLENGTH=27.8 + CLEARANCE;
 OLED_XLEN_VISIBLE=25;
 OLED_YLEN_VISIBLE=14.5;
-OLED_FromTopToVisible=4.0+WALL_THICKNESS;
+OLED_FromTopToVisible=5.0+WALL_THICKNESS;
 OLED_R=1;  // holes on the board
 
 WALL_FRONT=1;
 OUTER_LENGTH=WALL_THICKNESS*2 + 28;  // 28 is OLED_XLENGTH rounded up
 EDGE_SIZE=4;
 EDGE_ZLEN=1.8;
+EDGE_PinHeight=1;
 
 BOX_ZLENGTH=8;
 R_SCREW=1.2;
 
 
-module platform(x,y) {
+module platform(x,y,dx,dy) {
     translate([x,y,WALL_FRONT+EDGE_ZLEN/2]) {
-        cube([EDGE_SIZE, EDGE_SIZE, EDGE_ZLEN], center=true);
-        cylinder(r=1,h=2+EDGE_ZLEN/2);
+        translate([dx,dy,0]) cube([EDGE_SIZE, EDGE_SIZE, EDGE_ZLEN], center=true);
+        cylinder(r1=1,r2=0.4,h=EDGE_PinHeight+EDGE_ZLEN/2);
     }
 }
 
@@ -52,10 +53,10 @@ difference() {
     screwHoles();
 }
 
-platform(-OLED_XLENGTH/2+EDGE_SIZE/2, -OLED_YLENGTH/2+EDGE_SIZE/2);
-platform(OLED_XLENGTH/2-EDGE_SIZE/2, OLED_YLENGTH/2-EDGE_SIZE/2);
-platform(OLED_XLENGTH/2-EDGE_SIZE/2, -OLED_YLENGTH/2+EDGE_SIZE/2);
-platform(-OLED_XLENGTH/2+EDGE_SIZE/2, OLED_YLENGTH/2-EDGE_SIZE/2);
+platform(-OLED_XLENGTH/2+EDGE_SIZE/2, -OLED_YLENGTH/2+EDGE_SIZE/2,-1,-1);
+platform(OLED_XLENGTH/2-EDGE_SIZE/2, OLED_YLENGTH/2-EDGE_SIZE/2,1,1);
+platform(OLED_XLENGTH/2-EDGE_SIZE/2, -OLED_YLENGTH/2+EDGE_SIZE/2,1,-1);
+platform(-OLED_XLENGTH/2+EDGE_SIZE/2, OLED_YLENGTH/2-EDGE_SIZE/2,-1,1);
 
 difference() {
     translate([0,0,WALL_FRONT/2])
