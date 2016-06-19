@@ -30,6 +30,7 @@ LIBS:contrib
 LIBS:valves
 LIBS:cmos_ieee
 LIBS:ti
+LIBS:ESP8266
 LIBS:tt-display-cache
 EELAYER 25 0
 EELAYER END
@@ -696,4 +697,161 @@ Wire Wire Line
 	3350 6800 3700 6800
 Wire Wire Line
 	4000 6800 4100 6800
+$Comp
+L ESP-12 U?
+U 1 1 57657ADC
+P 7900 1700
+F 0 "U?" H 7900 1600 50  0000 C CNN
+F 1 "ESP-12" H 7900 1800 50  0000 C CNN
+F 2 "" H 7900 1700 50  0001 C CNN
+F 3 "" H 7900 1700 50  0001 C CNN
+	1    7900 1700
+	1    0    0    -1  
+$EndComp
+Text Label 7000 1700 0    39   ~ 0
+D0
+Text Label 7000 1800 0    39   ~ 0
+D5
+Text Label 7000 1900 0    39   ~ 0
+D6
+Text Label 7000 2000 0    39   ~ 0
+D7
+Text Label 8800 1600 0    39   ~ 0
+D1
+Text Label 8800 1700 0    39   ~ 0
+D2
+Text Label 8800 1800 0    39   ~ 0
+D3
+Text Label 8800 1900 0    39   ~ 0
+D4
+Text Label 8800 2000 0    39   ~ 0
+D8
+Text Notes 6550 1050 0    60   ~ 0
+D0-D8 for Wemos D1 mini
+$Comp
+L +3.3V #PWR?
+U 1 1 5765823D
+P 7900 750
+F 0 "#PWR?" H 7900 600 50  0001 C CNN
+F 1 "+3.3V" H 7900 890 50  0000 C CNN
+F 2 "" H 7900 750 50  0000 C CNN
+F 3 "" H 7900 750 50  0000 C CNN
+	1    7900 750 
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7900 750  7900 800 
+$Comp
+L GND #PWR?
+U 1 1 576582E3
+P 7900 2700
+F 0 "#PWR?" H 7900 2450 50  0001 C CNN
+F 1 "GND" H 7900 2550 50  0000 C CNN
+F 2 "" H 7900 2700 50  0000 C CNN
+F 3 "" H 7900 2700 50  0000 C CNN
+	1    7900 2700
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7900 2600 7900 2700
+$Comp
+L SW_PUSH SW1
+U 1 1 57658513
+P 9850 1000
+F 0 "SW1" H 10000 1110 50  0000 C CNN
+F 1 "Right" H 9850 920 50  0000 C CNN
+F 2 "" H 9850 1000 50  0000 C CNN
+F 3 "" H 9850 1000 50  0000 C CNN
+	1    9850 1000
+	0    1    1    0   
+$EndComp
+$Comp
+L SW_PUSH SW2
+U 1 1 576586A6
+P 10250 1000
+F 0 "SW2" H 10400 1110 50  0000 C CNN
+F 1 "Left" H 10250 920 50  0000 C CNN
+F 2 "" H 10250 1000 50  0000 C CNN
+F 3 "" H 10250 1000 50  0000 C CNN
+	1    10250 1000
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8800 1800 9850 1800
+Wire Wire Line
+	9850 1800 9850 1300
+Wire Wire Line
+	8800 1900 10250 1900
+Wire Wire Line
+	10250 1900 10250 1300
+$Comp
+L GND #PWR?
+U 1 1 57658873
+P 9750 700
+F 0 "#PWR?" H 9750 450 50  0001 C CNN
+F 1 "GND" H 9750 550 50  0000 C CNN
+F 2 "" H 9750 700 50  0000 C CNN
+F 3 "" H 9750 700 50  0000 C CNN
+	1    9750 700 
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9750 700  10250 700 
+Connection ~ 9850 700 
+Text GLabel 9050 1600 2    39   Output ~ 0
+SCL
+Wire Wire Line
+	8800 1600 9050 1600
+Text GLabel 9050 1700 2    39   Output ~ 0
+SDA
+Wire Wire Line
+	8800 1700 9050 1700
+Text Notes 9250 1650 0    39   ~ 0
+Oled
+Text GLabel 6900 1800 0    39   Output ~ 0
+CLK
+Wire Wire Line
+	7000 1800 6900 1800
+Text GLabel 6900 1900 0    39   Output ~ 0
+SDI
+Wire Wire Line
+	6900 1900 7000 1900
+Text GLabel 6900 2000 0    39   Output ~ 0
+LE
+Wire Wire Line
+	6900 2000 7000 2000
+Text GLabel 9050 2000 2    39   Output ~ 0
+OE
+Wire Wire Line
+	9050 2000 8800 2000
+$Comp
+L R 1M
+U 1 1 5766C0DC
+P 6750 1500
+F 0 "1M" V 6830 1500 50  0000 C CNN
+F 1 "R" V 6750 1500 50  0000 C CNN
+F 2 "" V 6680 1500 50  0000 C CNN
+F 3 "" H 6750 1500 50  0000 C CNN
+	1    6750 1500
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	6900 1500 7000 1500
+$Comp
+L +12V #PWR?
+U 1 1 5766C200
+P 6450 1500
+F 0 "#PWR?" H 6450 1350 50  0001 C CNN
+F 1 "+12V" H 6450 1640 50  0000 C CNN
+F 2 "" H 6450 1500 50  0000 C CNN
+F 3 "" H 6450 1500 50  0000 C CNN
+	1    6450 1500
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	6600 1500 6450 1500
+Text Label 7000 1500 0    39   ~ 0
+A0
+Text Notes 6400 1450 0    39   ~ 0
+Voricht: Wemos A0\nist Spannungsteiler
 $EndSCHEMATC

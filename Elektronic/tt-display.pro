@@ -1,4 +1,4 @@
-update=Mi 15 Jun 2016 20:17:44 CEST
+update=Sa 18 Jun 2016 18:44:55 CEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -60,3 +60,4 @@ LibName28=contrib
 LibName29=valves
 LibName30=cmos_ieee
 LibName31=ti
+LibName32=ESP8266
