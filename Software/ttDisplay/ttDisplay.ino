@@ -25,6 +25,40 @@ Adafruit_SSD1306 display(OLED_RESET);
 OneButton buttonRight(D3, true); // second Parameter true means active Low with internal Pullup
 OneButton buttonLeft(D4, true);
 
+// Config of Shiftregister/LED driver TLC5916
+const int TLC_OE = D8;
+const int TLC_CLK = D5;
+const int TLC_SDI = D6;
+const int TLC_LE = D7;
+
+/*Segments
+    - a -
+   |     |
+   f     b
+   |     |
+    - g -
+   |     |
+   e     c
+   |     |
+    - d -   dp
+    
+ Bit-order for shift register:
+  a b f g e d dp c
+*/
+
+//             abfgedpc
+byte zero  = 0b11101101;
+byte one   = 0b01000001;
+byte two   = 0b11011100;
+byte three = 0b11010101;
+byte four  = 0b01110001;
+byte five  = 0b10110101;
+//             abfgedpc
+byte six   = 0b00111101;
+byte seven = 0b11000001;
+byte eight = 0b11111101;
+byte nine  = 0b11110001;
+
 // Configured at startup:
 boolean leftStartetToServe;
 int gamesNeededToWinMatch;
@@ -411,11 +445,24 @@ void setup()   {
   buttonRight.setClickTicks(300);
   buttonLeft.setClickTicks(300);
 
-  // Start Options
-  optionSetup();  // Button Method calls:
-     // numberOfGamesSetup() which calls:
-     // startCount()
+  pinMode(TLC_OE, OUTPUT);
+  pinMode(TLC_LE, OUTPUT);
+  pinMode(TLC_CLK, OUTPUT);
+  pinMode(TLC_SDI, OUTPUT);
 
+  digitalWrite(TLC_OE, LOW);  // Enable all Segments
+  digitalWrite(TLC_LE, LOW);
+  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, nine);
+  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, eight);
+  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, seven);
+  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, six);
+  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, five);
+  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, four);
+  delay(80);
+  digitalWrite(TLC_LE, HIGH);
+
+  // Start Options
+  optionSetup();
 }
 
 void loop() {
