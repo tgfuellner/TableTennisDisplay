@@ -324,7 +324,7 @@ void changeNumberOfGames() {
 void numberOfGamesSetup() {
   gamesNeededToWinMatch = 3;
   showNumberOfGames(gamesNeededToWinMatch);
-  buttonLeft.attachClick(startCount);
+  buttonLeft.attachClick(serverSetup);
   buttonRight.attachClick(changeNumberOfGames);
 }
 
@@ -335,17 +335,22 @@ void changeServer() {
 
 void serverSetup() {
   display.clearDisplay();
-  leftStartetToServe = true;
   showServer(leftStartetToServe);
-  display.setFont(&FreeSans9pt7b);
   display.setCursor(3,15);
   display.print("Aufschlag?");
-
   showSetupMenu();
   display.display();
 
-  buttonLeft.attachClick(numberOfGamesSetup);
+  buttonLeft.attachClick(startCount);
   buttonRight.attachClick(changeServer);
+}
+
+void optionSetup() {
+  display.clearDisplay();
+  leftStartetToServe = true;
+  display.setFont(&FreeSans9pt7b);
+
+  numberOfGamesSetup();
 }
 
 
@@ -407,7 +412,7 @@ void setup()   {
   buttonLeft.setClickTicks(300);
 
   // Start Options
-  serverSetup();  // Button Method calls:
+  optionSetup();  // Button Method calls:
      // numberOfGamesSetup() which calls:
      // startCount()
 

@@ -1,4 +1,4 @@
-update=Sa 18 Jun 2016 18:44:55 CEST
+update=Sa 02 Jul 2016 16:15:56 CEST
 version=1
 last_client=kicad
 [pcbnew]
@@ -61,3 +61,13 @@ LibName29=valves
 LibName30=cmos_ieee
 LibName31=ti
 LibName32=ESP8266
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
