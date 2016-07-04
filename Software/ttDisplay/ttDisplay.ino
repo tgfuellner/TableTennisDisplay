@@ -59,9 +59,11 @@ byte seven = 0b11000001;
 byte eight = 0b11111101;
 byte nine  = 0b11110001;
 
+
 // Configured at startup:
 boolean leftStartetToServe;
 int gamesNeededToWinMatch;
+int brightness;
 
 // The Result:
 const int MAX_GAMES = 9;
@@ -79,6 +81,8 @@ void gameOverSwapSide();
 void lastGameSwapSide();
 void startCount();
 void showResult();
+void serverSetup();
+void setLEDCurrent(byte configCode);
 
 void showServer(boolean isLeft) {
   if (isLeft) {
@@ -348,6 +352,33 @@ void showNumberOfGames(int gamesNeededToWinMatch) {
   display.display();
 }
 
+void showBrightness() {
+  static byte brightnessValues[] = {0b00000000, 0b00000001, 0b00000011, 0b00000111, 0b11111111};
+  static char*menuTexts[] =        {"Dunkel",   "25%",      "50%",      "75%",      "Hell"};
+
+  brightness = brightness % sizeof(brightnessValues);
+  setLEDCurrent(brightnessValues[brightness]);
+
+  display.clearDisplay();
+  display.setCursor(3,15);
+  display.print(menuTexts[brightness]);
+
+  showSetupMenu();
+  display.display();
+}
+
+void changeBrightness() {
+  brightness++;
+  showBrightness();
+}
+
+void brightnessSetup() {
+  brightness = 3;
+  showBrightness();
+  buttonLeft.attachClick(serverSetup);
+  buttonRight.attachClick(changeBrightness);
+}
+
 void changeNumberOfGames() {
   gamesNeededToWinMatch++;
   if (gamesNeededToWinMatch > 5)
@@ -358,7 +389,7 @@ void changeNumberOfGames() {
 void numberOfGamesSetup() {
   gamesNeededToWinMatch = 3;
   showNumberOfGames(gamesNeededToWinMatch);
-  buttonLeft.attachClick(serverSetup);
+  buttonLeft.attachClick(brightnessSetup);
   buttonRight.attachClick(changeNumberOfGames);
 }
 
@@ -429,6 +460,51 @@ void startCount() {
   buttonLeft.attachDoubleClick(dclickLeft);
 }
 
+void TLC_modeSwitch(bool isSpecial) {
+  digitalWrite(TLC_OE, HIGH);
+  digitalWrite(TLC_CLK, LOW);
+  digitalWrite(TLC_LE, LOW);
+  digitalWrite(TLC_CLK, HIGH);
+
+  digitalWrite(TLC_CLK, LOW);
+  digitalWrite(TLC_OE, LOW);
+  digitalWrite(TLC_CLK, HIGH);
+
+  digitalWrite(TLC_CLK, LOW);
+  digitalWrite(TLC_OE, HIGH);
+  digitalWrite(TLC_CLK, HIGH);
+
+  digitalWrite(TLC_CLK, LOW);
+  digitalWrite(TLC_LE, isSpecial);
+  digitalWrite(TLC_CLK, HIGH);
+
+  digitalWrite(TLC_CLK, LOW);
+  digitalWrite(TLC_LE, LOW);
+  digitalWrite(TLC_CLK, HIGH);
+  digitalWrite(TLC_CLK, LOW);
+}
+
+void setLEDCurrent(byte configCode) {
+  // Look at Datasheet Figure 22 on Page 25
+  // configCode == 0 --> darkest
+  //               0xff --> brightest
+
+  // Switch to special mode
+  TLC_modeSwitch(HIGH);
+
+  for (int i=0; i<6; i++) {
+    shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, configCode);
+  }
+  delay(20);
+  //digitalWrite(TLC_CLK, LOW);
+  digitalWrite(TLC_LE, HIGH);
+  //digitalWrite(TLC_CLK, HIGH);
+
+  // Switch to normal mode
+  TLC_modeSwitch(LOW);
+  digitalWrite(TLC_OE, LOW);
+}
+
 
 void setup()   {                
   //Serial.begin(9600);  Serial.println("Start");
@@ -450,6 +526,8 @@ void setup()   {
   pinMode(TLC_CLK, OUTPUT);
   pinMode(TLC_SDI, OUTPUT);
 
+  setLEDCurrent(0b00000111);    // 75%
+
   digitalWrite(TLC_OE, LOW);  // Enable all Segments
   digitalWrite(TLC_LE, LOW);
   shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, nine);
@@ -458,10 +536,10 @@ void setup()   {
   shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, six);
   shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, five);
   shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, four);
-  delay(80);
+  delay(20);
   digitalWrite(TLC_LE, HIGH);
 
-  // Start Options
+  // Start Options query
   optionSetup();
 }
 
