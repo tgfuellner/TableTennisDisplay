@@ -46,18 +46,21 @@ const int TLC_LE = D7;
   a b f g e d dp c
 */
 
-//             abfgedpc
-byte zero  = 0b11101101;
-byte one   = 0b01000001;
-byte two   = 0b11011100;
-byte three = 0b11010101;
-byte four  = 0b01110001;
-byte five  = 0b10110101;
-//             abfgedpc
-byte six   = 0b00111101;
-byte seven = 0b11000001;
-byte eight = 0b11111101;
-byte nine  = 0b11110001;
+//                   abfgedpc
+const byte zero  = 0b11101101;
+const byte one   = 0b01000001;
+const byte two   = 0b11011100;
+const byte three = 0b11010101;
+const byte four  = 0b01110001;
+const byte five  = 0b10110101;
+//                   abfgedpc
+const byte six   = 0b10111101;
+const byte seven = 0b11000001;
+const byte eight = 0b11111101;
+const byte nine  = 0b11110101;
+const byte minus = 0b00010000;
+const byte dot   = 0b00000010;
+
 
 
 // Configured at startup:
@@ -113,6 +116,7 @@ class ScoreOneSide {
 };
 
 class Score {
+
     public:
     ScoreOneSide left;
     ScoreOneSide right;
@@ -193,7 +197,51 @@ class Score {
             return player%2;
     }
 
+    void writeLEDTenner(int number, bool wantDot) {
+        number = number / 10;
+        if (number == 0) {
+          byte dotMask = 0;
+          if (wantDot) {
+              dotMask = dot;
+          }
+          shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, 0b00000000|dotMask);
+          return;
+        }
+        writeLEDDigit(number, wantDot);
+    }
+    void writeLEDDigit(int number, bool wantDot) {
+        if (number < 0 || number > 9) {
+          shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, minus);
+          return;
+        }
+
+        const static byte digits[] = {zero, one, two, three, four, five, six, seven, eight, nine};
+        byte dotMask = 0;
+        if (wantDot) {
+            dotMask = dot;
+        }
+        shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, digits[number]|dotMask);
+    }
+
+    void showScoreOnLEDs() {
+
+        digitalWrite(TLC_LE, LOW);
+        bool leftServe = leftHasToServe();
+
+        writeLEDDigit(left.games, leftServe);
+        writeLEDDigit(left.points%10, leftServe);
+        writeLEDTenner(left.points, false);
+        yield();
+        writeLEDDigit(right.points%10, false);
+        writeLEDTenner(right.points, !leftServe);
+        writeLEDDigit(right.games, !leftServe);
+
+        delay(20);
+        digitalWrite(TLC_LE, HIGH);
+    }
+
     void showScore() {
+        yield();
         display.setFont(&FreeSans24pt7b);
         
         if (left.points < 10)
@@ -205,6 +253,7 @@ class Score {
         display.print(':');
         display.print(right.points);
 
+        yield();
         // Games in a smaller font
         display.setFont(&FreeSans12pt7b);
         display.setCursor(2,50);
@@ -215,6 +264,9 @@ class Score {
         showServer(leftHasToServe());
 
         display.display();
+        yield();
+
+        showScoreOnLEDs();
     }
 
     void showLongPressMenu(char *message) {
@@ -373,7 +425,7 @@ void changeBrightness() {
 }
 
 void brightnessSetup() {
-  brightness = 3;
+  brightness = 2;
   showBrightness();
   buttonLeft.attachClick(serverSetup);
   buttonRight.attachClick(changeBrightness);
@@ -396,11 +448,13 @@ void numberOfGamesSetup() {
 void changeServer() {
   leftStartetToServe = !leftStartetToServe;
   showServer(leftStartetToServe);
+  theScore.showScoreOnLEDs();
 }
 
 void serverSetup() {
   display.clearDisplay();
   showServer(leftStartetToServe);
+  theScore.showScoreOnLEDs();
   display.setCursor(3,15);
   display.print("Aufschlag?");
   showSetupMenu();
@@ -509,12 +563,8 @@ void setLEDCurrent(byte configCode) {
 void setup()   {                
   //Serial.begin(9600);  Serial.println("Start");
 
-  // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3D (for the 128x64)
-  // init done
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   
-
-  // text display tests
   display.setTextSize(1);
   display.setTextColor(WHITE);
 
@@ -526,7 +576,7 @@ void setup()   {
   pinMode(TLC_CLK, OUTPUT);
   pinMode(TLC_SDI, OUTPUT);
 
-  setLEDCurrent(0b00000111);    // 75%
+  setLEDCurrent(0b00000011);    // 50%
 
   digitalWrite(TLC_OE, LOW);  // Enable all Segments
   digitalWrite(TLC_LE, LOW);
