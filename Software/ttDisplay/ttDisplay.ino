@@ -240,6 +240,16 @@ class Score {
         digitalWrite(TLC_LE, HIGH);
     }
 
+    void showBattery() {
+        display.setFont(NULL);
+        display.setCursor(2,56);
+        int batVal = analogRead(A0);
+        double voltage = map(batVal, 770, 1024, 105, 140) / 10.0;
+        display.print(voltage, 1);
+        display.setCursor(28,56);
+        display.print('V');
+    }
+
     void showScore() {
         yield();
         display.setFont(&FreeSans24pt7b);
@@ -254,6 +264,9 @@ class Score {
         display.print(right.points);
 
         yield();
+
+        showBattery();
+
         // Games in a smaller font
         display.setFont(&FreeSans12pt7b);
         display.setCursor(2,50);
@@ -273,8 +286,8 @@ class Score {
         display.setFont(NULL);
         display.setCursor(25,45);
         display.print(message);
-        display.setCursor(10,55);
-        display.print("Taste lang halten");
+        display.setCursor(40,55);
+        display.print("Taste halten");
     }
 
     boolean isLastPossibleGame() {
