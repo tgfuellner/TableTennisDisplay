@@ -15,6 +15,14 @@ All text above, and the splash screen must be included in any redistribution
 #include <Fonts/FreeSans9pt7b.h>
 #include <OneButton.h>
 
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h>
+#include <ESP8266WebServer.h>
+
+
+const char* ssid = "TTDisplay1";
+const char* password = "12345678";  // set to "" for open access point w/o passwortd
+
 #define OLED_RESET -1
 Adafruit_SSD1306 display(OLED_RESET);
 
@@ -22,8 +30,21 @@ Adafruit_SSD1306 display(OLED_RESET);
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
 
-OneButton buttonRight(D3, true); // second Parameter true means active Low with internal Pullup
-OneButton buttonLeft(D4, true);
+class Buttons {
+    public:
+
+    // Wifi dont start if D3 (GPIO0) is used
+    // before Wifi setup
+    OneButton buttonRight;
+    OneButton buttonLeft;
+                                // second Parameter true means active Low with internal Pullup
+    Buttons() : buttonRight(D3, true), buttonLeft(D4, true) {
+    }
+};
+
+Buttons *b;
+
+ESP8266WebServer server(80);
 
 // Config of Shiftregister/LED driver TLC5916
 const int TLC_OE = D8;
@@ -86,6 +107,12 @@ void startCount();
 void showResult();
 void serverSetup();
 void setLEDCurrent(byte configCode);
+
+
+void handleRoot() {
+	server.send(200, "text/html", "<h1>sauber</h1>");
+}
+
 
 void showServer(boolean isLeft) {
   if (isLeft) {
@@ -310,21 +337,21 @@ class Score {
         if (left.winsGame() || right.winsGame()) {
             if (isLastGame()) {
                 showLongPressMenu("   Fertig");
-                buttonLeft.attachLongPressStart(showResult);
-                buttonRight.attachLongPressStart(showResult);
+                b->buttonLeft.attachLongPressStart(showResult);
+                b->buttonRight.attachLongPressStart(showResult);
                 return;
             }
 
             showLongPressMenu("Seitenwechsel");
-            buttonLeft.attachLongPressStart(::gameOverSwapSide);
-            buttonRight.attachLongPressStart(::gameOverSwapSide);
+            b->buttonLeft.attachLongPressStart(::gameOverSwapSide);
+            b->buttonRight.attachLongPressStart(::gameOverSwapSide);
             return;
         }
 
         if (isLastPossibleGame() && (left.points >= 5 || right.points >=5) && !sideChanged ) {
             showLongPressMenu("Seitenwechsel");
-            buttonLeft.attachLongPressStart(::lastGameSwapSide);
-            buttonRight.attachLongPressStart(::lastGameSwapSide);
+            b->buttonLeft.attachLongPressStart(::lastGameSwapSide);
+            b->buttonRight.attachLongPressStart(::lastGameSwapSide);
             return;
         }
     }
@@ -410,6 +437,12 @@ void showNumberOfGames(int gamesNeededToWinMatch) {
   static char*menuTexts[] = {"1 von 1?", "2 von 3?", "3 von 5?",
                              "4 von 7?", "5 von 9?"};
   display.clearDisplay();
+
+  display.setFont(NULL);
+  display.setCursor(0, 30);
+  display.print(WiFi.softAPIP());
+
+  display.setFont(&FreeSans9pt7b);
   display.setCursor(3,15);
   display.print(menuTexts[gamesNeededToWinMatch-1]);
 
@@ -419,14 +452,14 @@ void showNumberOfGames(int gamesNeededToWinMatch) {
 
 void showBrightness() {
   static byte brightnessValues[] = {0b00000000, 0b00000001, 0b00000011, 0b00000111, 0b11111111};
-  static char*menuTexts[] =        {"Dunkel",   "25%",      "50%",      "75%",      "Hell"};
+  static char*menuTexts[] =        {"Min",      "25%",      "50%",      "75%",      "Max"};
 
   brightness = brightness % sizeof(brightnessValues);
   setLEDCurrent(brightnessValues[brightness]);
 
   display.clearDisplay();
   display.setCursor(3,15);
-  display.print(menuTexts[brightness]);
+  display.print(String("Helligkeit: ") + menuTexts[brightness]);
 
   showSetupMenu();
   display.display();
@@ -440,8 +473,8 @@ void changeBrightness() {
 void brightnessSetup() {
   brightness = 2;
   showBrightness();
-  buttonLeft.attachClick(serverSetup);
-  buttonRight.attachClick(changeBrightness);
+  b->buttonLeft.attachClick(serverSetup);
+  b->buttonRight.attachClick(changeBrightness);
 }
 
 void changeNumberOfGames() {
@@ -454,8 +487,8 @@ void changeNumberOfGames() {
 void numberOfGamesSetup() {
   gamesNeededToWinMatch = 3;
   showNumberOfGames(gamesNeededToWinMatch);
-  buttonLeft.attachClick(brightnessSetup);
-  buttonRight.attachClick(changeNumberOfGames);
+  b->buttonLeft.attachClick(brightnessSetup);
+  b->buttonRight.attachClick(changeNumberOfGames);
 }
 
 void changeServer() {
@@ -473,8 +506,8 @@ void serverSetup() {
   showSetupMenu();
   display.display();
 
-  buttonLeft.attachClick(startCount);
-  buttonRight.attachClick(changeServer);
+  b->buttonLeft.attachClick(startCount);
+  b->buttonRight.attachClick(changeServer);
 }
 
 void optionSetup() {
@@ -488,8 +521,8 @@ void optionSetup() {
 
 
 void noLongPressAction() {
-  buttonLeft.attachLongPressStart(NULL);
-  buttonRight.attachLongPressStart(NULL);
+  b->buttonLeft.attachLongPressStart(NULL);
+  b->buttonRight.attachLongPressStart(NULL);
 }
 
 void clickRight() {
@@ -521,10 +554,10 @@ void startCount() {
   display.clearDisplay();
   theScore.showScore();
 
-  buttonRight.attachClick(clickRight);
-  buttonLeft.attachClick(clickLeft);
-  buttonRight.attachDoubleClick(dclickRight);
-  buttonLeft.attachDoubleClick(dclickLeft);
+  b->buttonRight.attachClick(clickRight);
+  b->buttonLeft.attachClick(clickLeft);
+  b->buttonRight.attachDoubleClick(dclickRight);
+  b->buttonLeft.attachDoubleClick(dclickLeft);
 }
 
 void TLC_modeSwitch(bool isSpecial) {
@@ -581,9 +614,6 @@ void setup()   {
   display.setTextSize(1);
   display.setTextColor(WHITE);
 
-  buttonRight.setClickTicks(300);
-  buttonLeft.setClickTicks(300);
-
   pinMode(TLC_OE, OUTPUT);
   pinMode(TLC_LE, OUTPUT);
   pinMode(TLC_CLK, OUTPUT);
@@ -602,14 +632,26 @@ void setup()   {
   delay(20);
   digitalWrite(TLC_LE, HIGH);
 
+  delay(100);
+  // AP mode
+  WiFi.softAP(ssid, password);
+  server.on("/", handleRoot);
+  server.begin();
+  
+  delay(100);
+  b = new Buttons();
+  b->buttonRight.setClickTicks(200);
+  b->buttonLeft.setClickTicks(200);
+
   // Start Options query
   optionSetup();
 }
 
 void loop() {
-    buttonRight.tick();
-    buttonLeft.tick();
+    b->buttonRight.tick();
+    b->buttonLeft.tick();
     delay(10);
+    server.handleClient();
 }
 
 
