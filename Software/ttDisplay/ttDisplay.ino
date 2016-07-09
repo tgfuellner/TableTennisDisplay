@@ -17,7 +17,9 @@ All text above, and the splash screen must be included in any redistribution
 
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
+#include <DNSServer.h>
 #include <ESP8266WebServer.h>
+#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 
 
 const char* ssid = "TTDisplay1";
@@ -44,7 +46,7 @@ class Buttons {
 
 Buttons *b;
 
-ESP8266WebServer server(80);
+// ESP8266WebServer server(80);
 
 // Config of Shiftregister/LED driver TLC5916
 const int TLC_OE = D8;
@@ -88,6 +90,7 @@ const byte dot   = 0b00000010;
 boolean leftStartetToServe;
 int gamesNeededToWinMatch;
 int brightness;
+IPAddress ip;
 
 // The Result:
 const int MAX_GAMES = 9;
@@ -110,7 +113,7 @@ void setLEDCurrent(byte configCode);
 
 
 void handleRoot() {
-	server.send(200, "text/html", "<h1>sauber</h1>");
+	//server.send(200, "text/html", "<h1>sauber</h1>");
 }
 
 
@@ -440,7 +443,7 @@ void showNumberOfGames(int gamesNeededToWinMatch) {
 
   display.setFont(NULL);
   display.setCursor(0, 30);
-  display.print(WiFi.softAPIP());
+  display.print(ip);
 
   display.setFont(&FreeSans9pt7b);
   display.setCursor(3,15);
@@ -607,7 +610,7 @@ void setLEDCurrent(byte configCode) {
 
 
 void setup()   {                
-  //Serial.begin(9600);  Serial.println("Start");
+  Serial.begin(9600);  Serial.println("Start");
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   
@@ -632,11 +635,29 @@ void setup()   {
   delay(20);
   digitalWrite(TLC_LE, HIGH);
 
-  delay(100);
+  delay(500);
+  WiFiManager wifiManager;
+  wifiManager.setDebugOutput(true);
+  //wifiManager.setTimeout(300);
+
+  display.clearDisplay();
+  display.setFont(NULL);
+  display.setCursor(0, 30);
+  display.print("Wlan einrichten ..");
+  display.display();
+  
+  wifiManager.resetSettings();
+  if(wifiManager.autoConnect(ssid, password)) {
+    ip = WiFi.localIP();
+  } else {
+    // failed to connect and hit timeout
+    ip = WiFi.softAPIP();
+  }
+
   // AP mode
-  WiFi.softAP(ssid, password);
-  server.on("/", handleRoot);
-  server.begin();
+  //WiFi.softAP(ssid, password);
+  //server.on("/", handleRoot);
+  //server.begin();
   
   delay(100);
   b = new Buttons();
@@ -651,7 +672,7 @@ void loop() {
     b->buttonRight.tick();
     b->buttonLeft.tick();
     delay(10);
-    server.handleClient();
+    //server.handleClient();
 }
 
 

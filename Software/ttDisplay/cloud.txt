@@ -1,0 +1,2 @@
+wget http://dweet.io/dweet/for/ttDisplay1?score=Tisch1%3Cbr%3E%3Cb%3EHans%20-%20Sepp%3C/b%3E:%20%208:11, 1:0, 2:0, 11:12 12:14 12:2 11:1 -O /dev/null
+https://freeboard.io/board/Y25Tan
