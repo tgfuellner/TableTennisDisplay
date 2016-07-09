@@ -21,6 +21,8 @@ All text above, and the splash screen must be included in any redistribution
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 
+#define Sprintln(a)
+// #define Sprintln(a) (Serial.println(a))
 
 const char* ssid = "TTDisplay1";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
@@ -50,7 +52,6 @@ class Buttons {
 };
 
 Buttons *b;
-
 ESP8266WebServer *server=NULL;
 
 // Config of Shiftregister/LED driver TLC5916
@@ -117,8 +118,53 @@ void serverSetup();
 void setLEDCurrent(byte configCode);
 
 
-void handleRoot() {
-	server->send(200, "text/html", "<h1>sauber</h1>");
+String urlencode(String str)
+{
+    String encodedString="";
+    char c;
+    char code0;
+    char code1;
+    char code2;
+    for (int i =0; i < str.length(); i++){
+      c=str.charAt(i);
+      if (c == ' '){
+        encodedString+= '+';
+      } else if (isalnum(c)){
+        encodedString+=c;
+      } else{
+        code1=(c & 0xf)+'0';
+        if ((c & 0xf) >9){
+            code1=(c & 0xf) - 10 + 'A';
+        }
+        c=(c>>4)&0xf;
+        code0=c+'0';
+        if (c > 9){
+            code0=c - 10 + 'A';
+        }
+        code2='\0';
+        encodedString+='%';
+        encodedString+=code0;
+        encodedString+=code1;
+        //encodedString+=code2;
+      }
+      yield();
+    }
+    return encodedString;
+    
+}
+
+unsigned char h2int(char c)
+{
+    if (c >= '0' && c <='9'){
+        return((unsigned char)c - '0');
+    }
+    if (c >= 'a' && c <='f'){
+        return((unsigned char)c - 'a' + 10);
+    }
+    if (c >= 'A' && c <='F'){
+        return((unsigned char)c - 'A' + 10);
+    }
+    return(0);
 }
 
 
@@ -275,13 +321,76 @@ class Score {
         digitalWrite(TLC_LE, HIGH);
     }
 
+    String getCurentResult() {
+        return String(left.points) + ":" + right.points;
+    }
+
+    void indicateSending(bool inverse) {
+        if (inverse) {
+            display.setTextColor(BLACK);
+        } else {
+            display.setTextColor(WHITE);
+        }
+        display.setFont(NULL);
+        display.setCursor(70,56);
+        display.print("Sende");
+        display.display();
+
+        display.setTextColor(WHITE);
+    }
+
+    void dweetScore() {
+        if (WiFi.status() == WL_CONNECTED) {
+            indicateSending(false);
+
+            WiFiClient client;
+            const int httpPort = 80;
+            const char * host = "54.175.118.28"; // http://dweet.io/
+            if (!client.connect(host, httpPort)) {
+                Sprintln("connection failed");
+                return;
+            }
+
+            String nameA("A");
+            String nameB("B");
+
+            String base("/dweet/for/");
+            String url = base+ssid+"?score="+ssid
+                            +urlencode(String("<br><b>"+nameA+" - "+nameB+"</b>  "+getCurentResult()));
+            Sprintln(String("http://")+host+url);
+            client.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + host + "\r\n"
+                                        + "Connection: close\r\n\r\n");
+            yield;
+
+            unsigned long timeout = millis();
+            while (client.available() == 0) {
+              yield;
+              if (millis() - timeout > 1000) {
+                Sprintln(">>> Client Timeout !");
+                client.stop();
+                indicateSending(true);
+                return;
+              }
+            }
+            
+            // Read all the lines of the reply from server and print them to Serial
+            while(client.available()){
+              yield;
+              String line = client.readStringUntil('\r');
+              Sprintln(line);
+            }
+
+            indicateSending(true);
+        }
+    }
+
     void showBattery() {
         display.setFont(NULL);
         display.setCursor(2,56);
         int batVal = analogRead(A0);
         double voltage = map(batVal, 770, 1024, 105, 140) / 10.0;
         display.print(voltage, 1);
-        display.setCursor(28,56);
+        //display.setCursor(28,56);
         display.print('V');
     }
 
@@ -315,6 +424,7 @@ class Score {
         yield();
 
         showScoreOnLEDs();
+        dweetScore();
     }
 
     void showLongPressMenu(char *message) {
@@ -419,6 +529,9 @@ void showResult() {
   display.display();
 }
 
+void handleRoot() {
+	server->send(200, "text/html", theScore.getCurentResult());
+}
 
 #define OK "Ok"
 #define OKx 3
@@ -568,13 +681,13 @@ void showWifiMode(bool wantToJoin) {
   if (wantToJoin) {
     display.print(ssid);
     display.setFont(NULL);
-    display.setCursor(3,30);
-    display.print("ins Wlan einbinden");
+    display.setCursor(3,25);
+    display.print("ins Wlan einbinden?");
   } else {
     display.print(ssid);
     display.setFont(NULL);
-    display.setCursor(3,30);
-    display.print("als eigenes Netz");
+    display.setCursor(3,25);
+    display.print("als eigenes Netz?");
   }
 
   showSetupMenu();
@@ -690,7 +803,7 @@ void setLEDCurrent(byte configCode) {
 
 
 void setup()   {                
-  // Serial.begin(9600);  Serial.println("Start");
+  Serial.begin(115200);  Sprintln("Start");
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   
@@ -722,6 +835,7 @@ void setup()   {
   display.setCursor(0, 30);
   display.print("Wlan einrichten ..");
   display.display();
+
   
   b = new Buttons();
 
