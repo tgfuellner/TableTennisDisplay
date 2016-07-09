@@ -41,12 +41,17 @@ class Buttons {
     OneButton buttonLeft;
                                 // second Parameter true means active Low with internal Pullup
     Buttons() : buttonRight(D3, true), buttonLeft(D4, true) {
+        // D3 and D4 on Wemos have external Pullup
+        digitalWrite(D3, LOW);   // turn off pullUp resistor
+        digitalWrite(D4, LOW);   // turn off pullUp resistor
+        buttonRight.setClickTicks(250);
+        buttonLeft.setClickTicks(250);
     }
 };
 
 Buttons *b;
 
-// ESP8266WebServer server(80);
+ESP8266WebServer *server=NULL;
 
 // Config of Shiftregister/LED driver TLC5916
 const int TLC_OE = D8;
@@ -113,7 +118,7 @@ void setLEDCurrent(byte configCode);
 
 
 void handleRoot() {
-	//server.send(200, "text/html", "<h1>sauber</h1>");
+	server->send(200, "text/html", "<h1>sauber</h1>");
 }
 
 
@@ -426,6 +431,7 @@ void showSetupMenu() {
   int16_t x,y;
   uint16_t w,h;
 
+  display.setFont(&FreeSans9pt7b);
   display.getTextBounds(OK,OKx,OKy,&x,&y,&w,&h);
   display.drawRect(x-2,y-2,w+4,h+4,WHITE);
   display.setCursor(OKx,OKy);
@@ -436,22 +442,7 @@ void showSetupMenu() {
   display.print(WE);
 }
 
-void showNumberOfGames(int gamesNeededToWinMatch) {
-  static char*menuTexts[] = {"1 von 1?", "2 von 3?", "3 von 5?",
-                             "4 von 7?", "5 von 9?"};
-  display.clearDisplay();
-
-  display.setFont(NULL);
-  display.setCursor(0, 30);
-  display.print(ip);
-
-  display.setFont(&FreeSans9pt7b);
-  display.setCursor(3,15);
-  display.print(menuTexts[gamesNeededToWinMatch-1]);
-
-  showSetupMenu();
-  display.display();
-}
+//////////////////////////////////////
 
 void showBrightness() {
   static byte brightnessValues[] = {0b00000000, 0b00000001, 0b00000011, 0b00000111, 0b11111111};
@@ -480,19 +471,7 @@ void brightnessSetup() {
   b->buttonRight.attachClick(changeBrightness);
 }
 
-void changeNumberOfGames() {
-  gamesNeededToWinMatch++;
-  if (gamesNeededToWinMatch > 5)
-      gamesNeededToWinMatch = 1;
-  showNumberOfGames(gamesNeededToWinMatch);
-}
-
-void numberOfGamesSetup() {
-  gamesNeededToWinMatch = 3;
-  showNumberOfGames(gamesNeededToWinMatch);
-  b->buttonLeft.attachClick(brightnessSetup);
-  b->buttonRight.attachClick(changeNumberOfGames);
-}
+//////////////////////////////////////
 
 void changeServer() {
   leftStartetToServe = !leftStartetToServe;
@@ -513,12 +492,113 @@ void serverSetup() {
   b->buttonRight.attachClick(changeServer);
 }
 
+//////////////////////////////////////
+
+void showNumberOfGames(int gamesNeededToWinMatch) {
+  static char*menuTexts[] = {"1 von 1?", "2 von 3?", "3 von 5?",
+                             "4 von 7?", "5 von 9?"};
+  display.clearDisplay();
+
+  display.setFont(NULL);
+  display.setCursor(0, 30);
+  display.print(ip);
+
+  display.setFont(&FreeSans9pt7b);
+  display.setCursor(3,15);
+  display.print(menuTexts[gamesNeededToWinMatch-1]);
+
+  showSetupMenu();
+  display.display();
+}
+
+void changeNumberOfGames() {
+  gamesNeededToWinMatch++;
+  if (gamesNeededToWinMatch > 5)
+      gamesNeededToWinMatch = 1;
+  showNumberOfGames(gamesNeededToWinMatch);
+}
+
+void numberOfGamesSetup() {
+  gamesNeededToWinMatch = 3;
+  showNumberOfGames(gamesNeededToWinMatch);
+  b->buttonLeft.attachClick(brightnessSetup);
+  b->buttonRight.attachClick(changeNumberOfGames);
+}
+
+//////////////////////////////////////
+bool wantToJoinNetwork = true;
+
+void doWifiMode() {
+  WiFiManager wifiManager;
+
+  display.clearDisplay();
+  display.setFont(&FreeSans9pt7b);
+  display.setCursor(0,30);
+  display.print("Wlan ...");
+  display.display();
+
+  if (wantToJoinNetwork) {
+      wifiManager.setDebugOutput(false);
+      //wifiManager.setTimeout(300);
+
+      if(wifiManager.autoConnect(ssid, password)) {
+        ip = WiFi.localIP();
+      } else {
+        // failed to connect and hit timeout
+      }
+  } else {
+      wifiManager.resetSettings();
+      // AP mode
+      WiFi.softAP(ssid, password);
+      ip = WiFi.softAPIP();
+  }
+
+  server = new ESP8266WebServer(80);
+  server->on("/", handleRoot);
+  server->begin();
+
+  numberOfGamesSetup();
+}
+
+void showWifiMode(bool wantToJoin) {
+  display.clearDisplay();
+
+  display.setFont(&FreeSans9pt7b);
+  display.setCursor(3,15);
+  if (wantToJoin) {
+    display.print(ssid);
+    display.setFont(NULL);
+    display.setCursor(3,30);
+    display.print("ins Wlan einbinden");
+  } else {
+    display.print(ssid);
+    display.setFont(NULL);
+    display.setCursor(3,30);
+    display.print("als eigenes Netz");
+  }
+
+  showSetupMenu();
+  display.display();
+}
+
+void changeWifiMode() {
+  wantToJoinNetwork = !wantToJoinNetwork;
+  showWifiMode(wantToJoinNetwork);
+}
+
+void wifiModeSetup() {
+  showWifiMode(wantToJoinNetwork);
+  b->buttonLeft.attachClick(doWifiMode);
+  b->buttonRight.attachClick(changeWifiMode);
+}
+
+//////////////////////////////////////
+
 void optionSetup() {
   display.clearDisplay();
   leftStartetToServe = true;
-  display.setFont(&FreeSans9pt7b);
 
-  numberOfGamesSetup();
+  wifiModeSetup();
 }
 
 
@@ -610,7 +690,7 @@ void setLEDCurrent(byte configCode) {
 
 
 void setup()   {                
-  Serial.begin(9600);  Serial.println("Start");
+  // Serial.begin(9600);  Serial.println("Start");
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   
@@ -635,10 +715,7 @@ void setup()   {
   delay(20);
   digitalWrite(TLC_LE, HIGH);
 
-  delay(500);
-  WiFiManager wifiManager;
-  wifiManager.setDebugOutput(true);
-  //wifiManager.setTimeout(300);
+  delay(100);
 
   display.clearDisplay();
   display.setFont(NULL);
@@ -646,23 +723,7 @@ void setup()   {
   display.print("Wlan einrichten ..");
   display.display();
   
-  wifiManager.resetSettings();
-  if(wifiManager.autoConnect(ssid, password)) {
-    ip = WiFi.localIP();
-  } else {
-    // failed to connect and hit timeout
-    ip = WiFi.softAPIP();
-  }
-
-  // AP mode
-  //WiFi.softAP(ssid, password);
-  //server.on("/", handleRoot);
-  //server.begin();
-  
-  delay(100);
   b = new Buttons();
-  b->buttonRight.setClickTicks(200);
-  b->buttonLeft.setClickTicks(200);
 
   // Start Options query
   optionSetup();
@@ -672,7 +733,10 @@ void loop() {
     b->buttonRight.tick();
     b->buttonLeft.tick();
     delay(10);
-    //server.handleClient();
+
+    if (server) {
+        server->handleClient();
+    }
 }
 
 
