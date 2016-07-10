@@ -22,10 +22,10 @@ All text above, and the splash screen must be included in any redistribution
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include <ESP8266HTTPClient.h>
 
-// #define Sprintln(a)
-#define Sprintln(a) (Serial.println(a))
-// #define Sprintf(a)
-#define Sprintf(format, ...) (Serial.printf(format, __VA_ARGS__))
+#define Sprintln(a)
+// #define Sprintln(a) (Serial.println(a))
+#define Sprintf(...)
+// #define Sprintf(format, ...) (Serial.printf(format, __VA_ARGS__))
 
 const char* ssid = "TTDisplay1";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
