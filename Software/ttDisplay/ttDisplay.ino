@@ -22,8 +22,10 @@ All text above, and the splash screen must be included in any redistribution
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include <ESP8266HTTPClient.h>
 
-#define Sprintln(a)
-// #define Sprintln(a) (Serial.println(a))
+// #define Sprintln(a)
+#define Sprintln(a) (Serial.println(a))
+// #define Sprintf(a)
+#define Sprintf(format, ...) (Serial.printf(format, __VA_ARGS__))
 
 const char* ssid = "TTDisplay1";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
@@ -110,8 +112,8 @@ IPAddress ip;
 
 // The Result:
 const int MAX_GAMES = 9;
-const int ZERO_RESULT = 1000;
-const int END_MARK = -10000;
+const int ZERO_RESULT = 19999;
+const int END_MARK = -20000;
 
 // Only points of Loser are stored
 // If the player which startet to Serve wins, we habe positive values
@@ -119,6 +121,7 @@ const int END_MARK = -10000;
 // 11:4 ==> 4
 // 8:11 ==> -8
 // 14:12 ==> 12
+// 0:11 ==> -0
 int resultPlayerStartetToServe[MAX_GAMES+1] = {END_MARK};
 
 void gameOverSwapSide();
@@ -244,7 +247,7 @@ class Score {
     void storeResult() {
         int totalPlayedGames = left.games + right.games;
         int points = (left.points > right.points) ? right.points : -left.points;
-        if (points = 0) {
+        if (points == 0) {
             points = ZERO_RESULT;
         }
 
@@ -254,10 +257,11 @@ class Score {
         if (sideChanged)
             points *= -1;
 
-        if (totalPlayedGames % 2 == 1)
+        if (totalPlayedGames % 2 == 0)
             points *= -1;
 
         resultPlayerStartetToServe[totalPlayedGames] = points;
+        Sprintf("resultPlayerStartetToServe[%d] = %d\n", totalPlayedGames, points);
         // Mark end of result:
         resultPlayerStartetToServe[totalPlayedGames+1] = END_MARK;
     }
@@ -346,11 +350,15 @@ class Score {
         digitalWrite(TLC_LE, HIGH);
     }
 
-    String getCurentResult() {
+    String getCurentResult(bool matchIsFinished) {
         String result;
         for (int i=0; resultPlayerStartetToServe[i] != END_MARK; i++) {
             result += getRes(resultPlayerStartetToServe[i]);
             result += ' ';
+        }
+
+        if (matchIsFinished) {
+            return result;
         }
 
         if (playersAreOnTheSideWhereTheyStarted()) {
@@ -373,7 +381,7 @@ class Score {
             w = 5 * (2+strlen(msg));  // Bug in getTextBounds()
             display.fillRect(xlu-2,ylu-2,w+4,h+4,BLACK);
             yield();
-            display.drawRect(xlu-3,ylu-2,w+6,h+6,WHITE);
+            display.drawRect(xlu-3,ylu-3,w+6,h+6,WHITE);
             display.print(msg);
             display.display();
         } else {
@@ -381,9 +389,9 @@ class Score {
         }
     }
 
-    void dweetScore() {
+    void dweetScore(bool matchIsFinished=false) {
         if (WiFi.status() == WL_CONNECTED) {
-            indicateSending(true);
+            if (!matchIsFinished) indicateSending(true);
 
             const int httpPort = 80;
             const char * host = "54.175.118.28"; // http://dweet.io/
@@ -393,14 +401,15 @@ class Score {
             String base("/dweet/for/");
             String uri = base+ssid+"?score="+ssid
                             +urlencode(String("<br><b>"+nameOfPlayerWhoStartedLeft+" - "
-                                                       +nameOfPlayerWhoStartedRight+"</b>  "+getCurentResult()));
+                                                       +nameOfPlayerWhoStartedRight+"</b>  "
+                                                       +getCurentResult(matchIsFinished)));
             Sprintln(String("http://")+host+uri);
 
             http.begin(host, httpPort, uri);
             int httpCode = http.GET();
             if(httpCode > 0) {
                 /*
-                Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+                Sprintf("[HTTP] GET... code: %d\n", httpCode);
 
                 if(httpCode == HTTP_CODE_OK) {
                     http.writeToStream(&Serial);
@@ -408,12 +417,12 @@ class Score {
                 }
                 */
             } else {
-                Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+                Sprintf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
             }
 
             http.end();
 
-            indicateSending(false);
+           if (!matchIsFinished) indicateSending(false);
         }
     }
 
@@ -545,7 +554,9 @@ void showExpandedPoints(int r) {
 
 void showResult() {
   b->noButtonsCommands();
+  theScore.sideChanged = false;
   theScore.storeResult();
+  
   display.clearDisplay();
   display.setFont(&FreeSans9pt7b);
   display.setCursor(0,15);
@@ -567,10 +578,11 @@ void showResult() {
       }
   }
   display.display();
+  theScore.dweetScore(true);
 }
 
 void handleRoot() {
-	server->send(200, "text/html", theScore.getCurentResult());
+	server->send(200, "text/html", theScore.getCurentResult(false));
 }
 
 #define OK "Ok"
