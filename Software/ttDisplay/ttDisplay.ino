@@ -20,12 +20,15 @@ All text above, and the splash screen must be included in any redistribution
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
+#include <ESP8266HTTPClient.h>
 
 #define Sprintln(a)
 // #define Sprintln(a) (Serial.println(a))
 
 const char* ssid = "TTDisplay1";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
+
+HTTPClient http;
 
 #define OLED_RESET -1
 Adafruit_SSD1306 display(OLED_RESET);
@@ -48,6 +51,13 @@ class Buttons {
         digitalWrite(D4, LOW);   // turn off pullUp resistor
         buttonRight.setClickTicks(250);
         buttonLeft.setClickTicks(250);
+    }
+
+    void noButtonsCommands() {
+        buttonRight.attachClick(NULL);
+        buttonLeft.attachClick(NULL);
+        buttonRight.attachDoubleClick(NULL);
+        buttonLeft.attachDoubleClick(NULL);
     }
 };
 
@@ -100,7 +110,8 @@ IPAddress ip;
 
 // The Result:
 const int MAX_GAMES = 9;
-const int END_MARK = -1000;
+const int ZERO_RESULT = 1000;
+const int END_MARK = -10000;
 
 // Only points of Loser are stored
 // If the player which startet to Serve wins, we habe positive values
@@ -108,7 +119,7 @@ const int END_MARK = -1000;
 // 11:4 ==> 4
 // 8:11 ==> -8
 // 14:12 ==> 12
-int resultPlayerStartetToServe[MAX_GAMES+1];
+int resultPlayerStartetToServe[MAX_GAMES+1] = {END_MARK};
 
 void gameOverSwapSide();
 void lastGameSwapSide();
@@ -117,6 +128,15 @@ void showResult();
 void serverSetup();
 void setLEDCurrent(byte configCode);
 
+String getRes(int res) {
+    if (res == ZERO_RESULT) {
+        return "0";
+    }
+    if (res == -ZERO_RESULT) {
+        return "-0";
+    }
+    return String(res);
+}
 
 String urlencode(String str)
 {
@@ -215,23 +235,30 @@ class Score {
             right.games++;
     }
 
-    void storeResult() {
+    bool playersAreOnTheSideWhereTheyStarted() {
         int totalPlayedGames = left.games + right.games;
 
-        resultPlayerStartetToServe[totalPlayedGames] = 
-                    (left.points > right.points) ? right.points : -left.points;
+        return (totalPlayedGames % 2 == 0 && !sideChanged);
+    }
+
+    void storeResult() {
+        int totalPlayedGames = left.games + right.games;
+        int points = (left.points > right.points) ? right.points : -left.points;
+        if (points = 0) {
+            points = ZERO_RESULT;
+        }
 
         if (!leftStartetToServe)
-            resultPlayerStartetToServe[totalPlayedGames] *= -1;
+            points *= -1;
 
         if (sideChanged)
-            resultPlayerStartetToServe[totalPlayedGames] *= -1;
+            points *= -1;
 
         if (totalPlayedGames % 2 == 1)
-            resultPlayerStartetToServe[totalPlayedGames] *= -1;
+            points *= -1;
 
+        resultPlayerStartetToServe[totalPlayedGames] = points;
         // Mark end of result:
-        resultPlayerStartetToServe[totalPlayedGames+1] = END_MARK;
         resultPlayerStartetToServe[totalPlayedGames+1] = END_MARK;
     }
 
@@ -243,7 +270,6 @@ class Score {
         right.games = games;
         left.points = 0;
         right.points = 0;
-        display.clearDisplay();
         showScore();
     }
 
@@ -259,7 +285,6 @@ class Score {
 
         sideChanged = true;
 
-        display.clearDisplay();
         showScore();
     }
 
@@ -322,65 +347,73 @@ class Score {
     }
 
     String getCurentResult() {
-        return String(left.points) + ":" + right.points;
+        String result;
+        for (int i=0; resultPlayerStartetToServe[i] != END_MARK; i++) {
+            result += getRes(resultPlayerStartetToServe[i]);
+            result += ' ';
+        }
+
+        if (playersAreOnTheSideWhereTheyStarted()) {
+            return result + left.points + ":" + right.points;
+        } else {
+            return result + right.points + ":" + left.points;
+        }
     }
 
-    void indicateSending(bool inverse) {
-        if (inverse) {
-            display.setTextColor(BLACK);
-        } else {
-            display.setTextColor(WHITE);
-        }
-        display.setFont(NULL);
-        display.setCursor(70,56);
-        display.print("Sende");
-        display.display();
+    void indicateSending(bool isSending) {
+        if (isSending) {
+            const int16_t x=40, y=43;
+            int16_t xlu, ylu;
+            uint16_t w, h;
+            const char* msg = "Sende ..";
 
-        display.setTextColor(WHITE);
+            display.setFont(NULL);
+            display.setCursor(x,y);
+            display.getTextBounds((char *)msg,x,y,&xlu,&ylu,&w,&h);
+            w = 5 * (2+strlen(msg));  // Bug in getTextBounds()
+            display.fillRect(xlu-2,ylu-2,w+4,h+4,BLACK);
+            yield();
+            display.drawRect(xlu-3,ylu-2,w+6,h+6,WHITE);
+            display.print(msg);
+            display.display();
+        } else {
+            showScoreOnOled();
+        }
     }
 
     void dweetScore() {
         if (WiFi.status() == WL_CONNECTED) {
-            indicateSending(false);
+            indicateSending(true);
 
-            WiFiClient client;
             const int httpPort = 80;
             const char * host = "54.175.118.28"; // http://dweet.io/
-            if (!client.connect(host, httpPort)) {
-                Sprintln("connection failed");
-                return;
-            }
-
-            String nameA("A");
-            String nameB("B");
+            String nameOfPlayerWhoStartedLeft("LeftStarter");
+            String nameOfPlayerWhoStartedRight("RightStarter");
 
             String base("/dweet/for/");
-            String url = base+ssid+"?score="+ssid
-                            +urlencode(String("<br><b>"+nameA+" - "+nameB+"</b>  "+getCurentResult()));
-            Sprintln(String("http://")+host+url);
-            client.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + host + "\r\n"
-                                        + "Connection: close\r\n\r\n");
-            yield;
+            String uri = base+ssid+"?score="+ssid
+                            +urlencode(String("<br><b>"+nameOfPlayerWhoStartedLeft+" - "
+                                                       +nameOfPlayerWhoStartedRight+"</b>  "+getCurentResult()));
+            Sprintln(String("http://")+host+uri);
 
-            unsigned long timeout = millis();
-            while (client.available() == 0) {
-              yield;
-              if (millis() - timeout > 1000) {
-                Sprintln(">>> Client Timeout !");
-                client.stop();
-                indicateSending(true);
-                return;
-              }
-            }
-            
-            // Read all the lines of the reply from server and print them to Serial
-            while(client.available()){
-              yield;
-              String line = client.readStringUntil('\r');
-              Sprintln(line);
+            http.begin(host, httpPort, uri);
+            int httpCode = http.GET();
+            if(httpCode > 0) {
+                /*
+                Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+
+                if(httpCode == HTTP_CODE_OK) {
+                    http.writeToStream(&Serial);
+                    Sprintln();
+                }
+                */
+            } else {
+                Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
             }
 
-            indicateSending(true);
+            http.end();
+
+            indicateSending(false);
         }
     }
 
@@ -394,7 +427,9 @@ class Score {
         display.print('V');
     }
 
-    void showScore() {
+    void showScoreOnOled() {
+        display.clearDisplay();
+        handleGameDecision();
         yield();
         display.setFont(&FreeSans24pt7b);
         
@@ -421,6 +456,10 @@ class Score {
         showServer(leftHasToServe());
 
         display.display();
+    }
+
+    void showScore() {
+        showScoreOnOled();
         yield();
 
         showScoreOnLEDs();
@@ -483,8 +522,6 @@ class Score {
 
         side.points += n;
 
-        display.clearDisplay();
-        handleGameDecision();
         showScore();
     }
 };
@@ -493,11 +530,13 @@ Score theScore;
 
 void showExpandedPoints(int r) {
   if (r > 0) {
+      r = (r==ZERO_RESULT) ? 0:r;
       display.print((r>9) ? r+2 : 11);
       display.print(":");
       display.print(r);
   } else {
       r *= -1;
+      r = (r==ZERO_RESULT) ? 0:r;
       display.print(r);
       display.print(":");
       display.print((r>9) ? r+2 : 11);
@@ -505,6 +544,7 @@ void showExpandedPoints(int r) {
 }
 
 void showResult() {
+  b->noButtonsCommands();
   theScore.storeResult();
   display.clearDisplay();
   display.setFont(&FreeSans9pt7b);
@@ -513,7 +553,7 @@ void showResult() {
       for (int i=0; resultPlayerStartetToServe[i] != END_MARK; i++) {
           if (i>0 && i%3 == 0) 
               display.print(",\n");
-          display.print(resultPlayerStartetToServe[i]);
+          display.print(getRes(resultPlayerStartetToServe[i]));
           if (resultPlayerStartetToServe[i+1] != END_MARK) 
               display.print(", ");
       }
@@ -747,7 +787,6 @@ void lastGameSwapSide() {
 }
 
 void startCount() {
-  display.clearDisplay();
   theScore.showScore();
 
   b->buttonRight.attachClick(clickRight);
@@ -838,6 +877,9 @@ void setup()   {
 
   
   b = new Buttons();
+
+  // allow reuse (if server supports it)
+  http.setReuse(true);
 
   // Start Options query
   optionSetup();
