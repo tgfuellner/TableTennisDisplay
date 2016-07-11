@@ -430,10 +430,27 @@ class Score {
         display.setFont(NULL);
         display.setCursor(2,56);
         int batVal = analogRead(A0);
-        double voltage = map(batVal, 770, 1024, 105, 140) / 10.0;
-        display.print(voltage, 1);
-        //display.setCursor(28,56);
-        display.print('V');
+        double voltage = map(batVal, 685, 1024, 100, 149) / 10.0;
+
+        // Alternate Bat Status and Bat Voltage
+        // avoid collision with oder Message
+        if ((left.points+right.points) % 2 == 1 
+            && left.points < 11 && right.points < 11
+            && !isLastPossibleGame()) {
+            if (voltage < 11.3) {
+                display.print("Bat leer");
+            } else if (voltage > 12.7) {
+                display.print("Bat voll");
+            } else  {
+                display.print("Bat Ok");
+            }
+        } else {
+            display.print(voltage, 1);
+            display.print('V');
+        }
+
+        // For Voltage calibration
+        //display.print(batVal);
     }
 
     void showScoreOnOled() {
