@@ -115,6 +115,9 @@ const int MAX_GAMES = 9;
 const int ZERO_RESULT = 19999;
 const int END_MARK = -20000;
 
+String nameOfPlayerWhoStartedLeft("LeftStarter");
+String nameOfPlayerWhoStartedRight("RightStarter");
+
 // Only points of Loser are stored
 // If the player which startet to Serve wins, we habe positive values
 // otherwise negative.
@@ -148,11 +151,13 @@ String urlencode(String str)
     char code0;
     char code1;
     char code2;
+    Sprintln(String("urlencode org:")+str);
     for (int i =0; i < str.length(); i++){
       c=str.charAt(i);
+      Sprintln(int(c));
       if (c == ' '){
         encodedString+= '+';
-      } else if (isalnum(c)){
+      } else if (isalnum(c) || c==0xfc || c==0xf6 || c==0xe4 || c==0xdf){  // ä,ü,ö,ß
         encodedString+=c;
       } else{
         code1=(c & 0xf)+'0';
@@ -172,6 +177,7 @@ String urlencode(String str)
       }
       yield();
     }
+    Sprintln(encodedString);
     return encodedString;
     
 }
@@ -395,8 +401,6 @@ class Score {
 
             const int httpPort = 80;
             const char * host = "54.175.118.28"; // http://dweet.io/
-            String nameOfPlayerWhoStartedLeft("LeftStarter");
-            String nameOfPlayerWhoStartedRight("RightStarter");
 
             String base("/dweet/for/");
             String uri = base+ssid+"?score="+ssid
@@ -446,7 +450,7 @@ class Score {
             }
         } else {
             display.print(voltage, 1);
-            display.print('V');
+            display.print("V");
         }
 
         // For Voltage calibration
@@ -599,8 +603,39 @@ void showResult() {
 }
 
 void handleRoot() {
-	server->send(200, "text/html", theScore.getCurentResult(false));
+	server->send(200, "text/html", nameOfPlayerWhoStartedLeft + " - " + nameOfPlayerWhoStartedRight
+            + "<font size=\"+2\">" + theScore.getCurentResult(false) +"</font>");
 }
+
+void handleSetNames() {
+    nameOfPlayerWhoStartedLeft = server->arg("left");
+    Sprintln(String("Name==")+nameOfPlayerWhoStartedLeft);
+    nameOfPlayerWhoStartedRight = server->arg("right");
+
+    String html= R"(<html><head><meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"></head><body>)";
+
+    if (nameOfPlayerWhoStartedLeft.length() > 0 && nameOfPlayerWhoStartedRight.length() > 0) {
+      html += String("<h2>Diese Namen wurden eingetragen:</h2><p>")
+             +"Linker Spieler: "+nameOfPlayerWhoStartedLeft
+             +"<br/>Rechter Spieler: "+nameOfPlayerWhoStartedRight+"</p><hr/>";
+    }
+
+    html += R"====(
+<h2>Namen beim Spielbeginn:</h2>
+<form action="setNames" id="form">
+ <label for="left">Linker Spieler</label> 
+ <input type="text" name="left" id="left" size="20" maxlength="30">
+
+ <label for="right">Rechter Spieler</label>  
+ <input type="text" name="right" id="right" size="20" maxlength="30">
+
+ <input type="submit" value="Ok"></input>
+</form></body>
+)====";
+
+    server->send(200, "text/html", html);
+}
+
 
 #define OK "Ok"
 #define OKx 3
@@ -737,6 +772,7 @@ void doWifiMode() {
 
   server = new ESP8266WebServer(80);
   server->on("/", handleRoot);
+  server->on("/setNames", handleSetNames);
   server->begin();
 
   numberOfGamesSetup();
