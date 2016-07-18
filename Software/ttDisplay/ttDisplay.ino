@@ -157,7 +157,9 @@ String urlencode(String str)
       Sprintln(int(c));
       if (c == ' '){
         encodedString+= '+';
-      } else if (isalnum(c) || c==0xfc || c==0xf6 || c==0xe4 || c==0xdf){  // ä,ü,ö,ß
+      } else if (isalnum(c) 
+            || c==0xfc || c==0xf6 || c==0xe4 || c==0xdf // ü,ö,ä,ß
+            || c==0xC4) || c==0xDC || c==0xD6 {  // Ä,Ü,Ö
         encodedString+=c;
       } else{
         code1=(c & 0xf)+'0';
@@ -621,7 +623,7 @@ void handleSetNames() {
     }
 
     html += R"====(
-<h2>Namen beim Spielbeginn:</h2>
+<h2>Namen und Seite beim Spielbeginn:</h2>
 <form action="setNames" id="form">
  <label for="left">Linker Spieler</label> 
  <input type="text" name="left" id="left" size="20" maxlength="30">
@@ -812,7 +814,7 @@ void wifiModeSetup() {
 
 //////////////////////////////////////
 
-void optionSetup() {
+void startUpOptionSetup() {
   display.clearDisplay();
   leftStartetToServe = true;
 
@@ -947,7 +949,7 @@ void setup()   {
   http.setReuse(true);
 
   // Start Options query
-  optionSetup();
+  startUpOptionSetup();
 }
 
 void loop() {

@@ -37,11 +37,16 @@ Display for counting Table Tennis Matches
  * do swaping after pressing of a button 
 
 ## Setup
+### Menu right after powering the display on
 
-* Setup menu right after powering the display on
+* Join a existing Wifi or make a own AP
+* Enter left and right player at game start
+* Which side serves first
+
+### Menu after long button press
 * Number of games to play:
  * default: 3 games of 5
  * 2 of 3
  * 4 of 7
  * 5 of 9
-* Which side serves first
+* LED Brightness
