@@ -105,9 +105,10 @@ const byte dot   = 0b00000010;
 
 
 // Configured at startup:
-boolean leftStartetToServe;
-int gamesNeededToWinMatch;
-int brightness;
+boolean leftStartetToServe = true;
+int gamesNeededToWinMatch = 3;
+int brightness = 2;   // 50%
+bool wantToJoinNetwork = true;
 IPAddress ip;
 
 // The Result:
@@ -159,7 +160,7 @@ String urlencode(String str)
         encodedString+= '+';
       } else if (isalnum(c) 
             || c==0xfc || c==0xf6 || c==0xe4 || c==0xdf // ü,ö,ä,ß
-            || c==0xC4) || c==0xDC || c==0xD6 {  // Ä,Ü,Ö
+            || c==0xC4 || c==0xDC || c==0xD6) {  // Ä,Ü,Ö
         encodedString+=c;
       } else{
         code1=(c & 0xf)+'0';
@@ -407,7 +408,7 @@ class Score {
             String base("/dweet/for/");
             String uri = base+ssid+"?score="+ssid
                             +urlencode(String("<br><b>"+nameOfPlayerWhoStartedLeft+" - "
-                                                       +nameOfPlayerWhoStartedRight+"</b>  "
+                                                       +nameOfPlayerWhoStartedRight+"</b><br/>"
                                                        +getCurentResult(matchIsFinished)));
             Sprintln(String("http://")+host+uri);
 
@@ -642,11 +643,10 @@ void handleSetNames() {
 #define OK "Ok"
 #define OKx 3
 #define OKy 55
-#define WE "Wechsel"
 #define WEx 47
 #define WEy 55
 
-void showSetupMenu() {
+void showSetupMenu(char *rightMsg="Wechsel") {
   int16_t x,y;
   uint16_t w,h;
 
@@ -655,10 +655,10 @@ void showSetupMenu() {
   display.drawRect(x-2,y-2,w+4,h+4,WHITE);
   display.setCursor(OKx,OKy);
   display.print(OK);
-  display.getTextBounds(WE,WEx,WEy,&x,&y,&w,&h);
+  display.getTextBounds(rightMsg,WEx,WEy,&x,&y,&w,&h);
   display.drawRect(x-2,y-2,w+4,h+4,WHITE);
   display.setCursor(WEx,WEy);
-  display.print(WE);
+  display.print(rightMsg);
 }
 
 //////////////////////////////////////
@@ -684,9 +684,8 @@ void changeBrightness() {
 }
 
 void brightnessSetup() {
-  brightness = 2;
   showBrightness();
-  b->buttonLeft.attachClick(serverSetup);
+  b->buttonLeft.attachClick(startCount);
   b->buttonRight.attachClick(changeBrightness);
 }
 
@@ -738,14 +737,64 @@ void changeNumberOfGames() {
 }
 
 void numberOfGamesSetup() {
-  gamesNeededToWinMatch = 3;
   showNumberOfGames(gamesNeededToWinMatch);
   b->buttonLeft.attachClick(brightnessSetup);
   b->buttonRight.attachClick(changeNumberOfGames);
 }
 
 //////////////////////////////////////
-bool wantToJoinNetwork = true;
+
+void swapPlayerNames() {
+  String tmp = nameOfPlayerWhoStartedLeft;
+  nameOfPlayerWhoStartedLeft = nameOfPlayerWhoStartedRight;
+  nameOfPlayerWhoStartedRight = tmp;
+
+  showPlayerNames();
+  display.display();
+}
+
+void showPlayerNames() {
+  display.clearDisplay();
+  display.setFont(NULL);
+  display.setCursor(0,0);
+  display.print("Linker Spieler:\n");
+  display.print(nameOfPlayerWhoStartedLeft);
+
+  display.setCursor(0,22);
+  display.print("   Rechter Spieler:\n");
+  display.print("   ");
+  display.print(nameOfPlayerWhoStartedRight);
+
+  showSetupMenu();
+  display.display();
+}
+
+void swapPlayerNamesSetup() {
+  showPlayerNames();
+  b->buttonLeft.attachClick(serverSetup);
+  b->buttonRight.attachClick(swapPlayerNames);
+}
+
+//////////////////////////////////////
+
+void showEnterPlayerNames() {
+  display.clearDisplay();
+  display.setFont(NULL);
+  display.setCursor(0,0);
+  display.print("Spieler eingeben mit:\n\n");
+  display.print(ip); display.print("/setNames");
+
+  showSetupMenu("Weiter");
+  display.display();
+}
+
+void enterPlayerNames() {
+  showEnterPlayerNames();
+  b->buttonLeft.attachClick(swapPlayerNamesSetup);
+  b->buttonRight.attachClick(serverSetup);
+}
+
+//////////////////////////////////////
 
 void doWifiMode() {
   WiFiManager wifiManager;
@@ -777,7 +826,7 @@ void doWifiMode() {
   server->on("/setNames", handleSetNames);
   server->begin();
 
-  numberOfGamesSetup();
+  enterPlayerNames();
 }
 
 void showWifiMode(bool wantToJoin) {
@@ -815,47 +864,49 @@ void wifiModeSetup() {
 //////////////////////////////////////
 
 void startUpOptionSetup() {
-  display.clearDisplay();
-  leftStartetToServe = true;
-
   wifiModeSetup();
 }
 
+void optionSetup() {
+  numberOfGamesSetup();
+}
 
 
-void noLongPressAction() {
-  b->buttonLeft.attachLongPressStart(NULL);
-  b->buttonRight.attachLongPressStart(NULL);
+
+void defaultLongPressAction() {
+  b->buttonLeft.attachLongPressStart(optionSetup);
+  b->buttonRight.attachLongPressStart(optionSetup);
 }
 
 void clickRight() {
-  noLongPressAction();
+  defaultLongPressAction();
   theScore.count(theScore.right);
 }
 void clickLeft() {
-  noLongPressAction();
+  defaultLongPressAction();
   theScore.count(theScore.left);
 }
 void dclickRight() {
-  noLongPressAction();
+  defaultLongPressAction();
   theScore.count(theScore.right, -1);
 }
 void dclickLeft() {
-  noLongPressAction();
+  defaultLongPressAction();
   theScore.count(theScore.left, -1);
 }
 void gameOverSwapSide() {
-    noLongPressAction();
+    defaultLongPressAction();
     theScore.gameOverSwapSide();
 }
 void lastGameSwapSide() {
-    noLongPressAction();
+    defaultLongPressAction();
     theScore.lastGameSwapSide();
 }
 
 void startCount() {
   theScore.showScore();
 
+  defaultLongPressAction();
   b->buttonRight.attachClick(clickRight);
   b->buttonLeft.attachClick(clickLeft);
   b->buttonRight.attachDoubleClick(dclickRight);
@@ -947,6 +998,7 @@ void setup()   {
 
   // allow reuse (if server supports it)
   http.setReuse(true);
+
 
   // Start Options query
   startUpOptionSetup();
