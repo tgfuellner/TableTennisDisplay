@@ -642,9 +642,9 @@ void handleSetNames() {
 
 #define OK "Ok"
 #define OKx 3
-#define OKy 55
-#define WEx 47
-#define WEy 55
+#define OKy 61
+#define WEx 52
+#define WEy 61
 
 void showSetupMenu(char *rightMsg="Wechsel") {
   int16_t x,y;
@@ -655,10 +655,13 @@ void showSetupMenu(char *rightMsg="Wechsel") {
   display.drawRect(x-2,y-2,w+4,h+4,WHITE);
   display.setCursor(OKx,OKy);
   display.print(OK);
-  display.getTextBounds(rightMsg,WEx,WEy,&x,&y,&w,&h);
-  display.drawRect(x-2,y-2,w+4,h+4,WHITE);
-  display.setCursor(WEx,WEy);
-  display.print(rightMsg);
+  
+  if (rightMsg != NULL) {
+      display.getTextBounds(rightMsg,WEx,WEy,&x,&y,&w,&h);
+      display.drawRect(x-2,y-2,w+4,h+4,WHITE);
+      display.setCursor(WEx,WEy);
+      display.print(rightMsg);
+  }
 }
 
 //////////////////////////////////////
@@ -719,7 +722,7 @@ void showNumberOfGames(int gamesNeededToWinMatch) {
 
   display.setFont(NULL);
   display.setCursor(0, 30);
-  display.print(ip);
+  display.print("Gewinnsaetze");
 
   display.setFont(&FreeSans9pt7b);
   display.setCursor(3,15);
@@ -740,6 +743,33 @@ void numberOfGamesSetup() {
   showNumberOfGames(gamesNeededToWinMatch);
   b->buttonLeft.attachClick(brightnessSetup);
   b->buttonRight.attachClick(changeNumberOfGames);
+}
+
+//////////////////////////////////////
+
+void showInfoPage() {
+  display.clearDisplay();
+
+  display.setFont(NULL);
+  display.setCursor(0, 0);
+  display.print("IP="); display.println(ip);
+
+  if (wantToJoinNetwork) {
+      display.println("\nTicker=");
+      display.println("freeboard.io/board/Y25Tan");
+  } else {
+      display.println("\nKein Ticker");
+      display.println("\nnicht im Netz!");
+  }
+
+  showSetupMenu(NULL);
+  display.display();
+}
+
+void infoPage() {
+  showInfoPage();
+  b->buttonLeft.attachClick(numberOfGamesSetup);
+  b->buttonRight.attachClick(numberOfGamesSetup);
 }
 
 //////////////////////////////////////
@@ -801,13 +831,20 @@ void doWifiMode() {
 
   display.clearDisplay();
   display.setFont(&FreeSans9pt7b);
-  display.setCursor(0,30);
+  display.setCursor(0,12);
   display.print("Wlan ...");
   display.display();
 
   if (wantToJoinNetwork) {
       wifiManager.setDebugOutput(false);
       //wifiManager.setTimeout(300);
+
+      display.setFont(NULL);
+      display.setCursor(0,25);
+      display.print("Zum Einrichten mit\n\n   ");
+      display.print(ssid);
+      display.print("\n\nverbinden");
+      display.display();
 
       if(wifiManager.autoConnect(ssid, password)) {
         ip = WiFi.localIP();
@@ -868,9 +905,8 @@ void startUpOptionSetup() {
 }
 
 void optionSetup() {
-  numberOfGamesSetup();
+  infoPage();
 }
-
 
 
 void defaultLongPressAction() {
