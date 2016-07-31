@@ -972,8 +972,8 @@ void startUpOptionSetup() {
 }
 
 void optionSetup() {
-  b->buttonLeft.attachLongPressStart(startCount);
-  b->buttonRight.attachLongPressStart(startCount);
+  b->buttonLeft.attachLongPressStart(stopTimout);
+  b->buttonRight.attachLongPressStart(stopTimout);
   askToStartTimout();
 }
 
