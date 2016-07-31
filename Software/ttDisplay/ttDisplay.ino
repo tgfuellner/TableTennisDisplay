@@ -21,6 +21,7 @@ All text above, and the splash screen must be included in any redistribution
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 #include <ESP8266HTTPClient.h>
+#include <Ticker.h>
 
 #define Sprintln(a)
 // #define Sprintln(a) (Serial.println(a))
@@ -31,6 +32,8 @@ const char* ssid = "TTDisplay1";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
 HTTPClient http;
+
+Ticker timer;
 
 #define OLED_RESET -1
 Adafruit_SSD1306 display(OLED_RESET);
@@ -211,6 +214,32 @@ void showServer(boolean isLeft) {
   display.display();
 }
 
+void writeLEDTenner(int number, bool wantDot) {
+    number = number / 10;
+    if (number == 0) {
+      byte dotMask = 0;
+      if (wantDot) {
+          dotMask = dot;
+      }
+      shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, 0b00000000|dotMask);
+      return;
+    }
+    writeLEDDigit(number, wantDot);
+}
+void writeLEDDigit(int number, bool wantDot) {
+    if (number < 0 || number > 9) {
+      shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, minus);
+      return;
+    }
+
+    const static byte digits[] = {zero, one, two, three, four, five, six, seven, eight, nine};
+    byte dotMask = 0;
+    if (wantDot) {
+        dotMask = dot;
+    }
+    shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, digits[number]|dotMask);
+}
+
 class ScoreOneSide {
     public:
     int games;
@@ -316,31 +345,6 @@ class Score {
             return player%2;
     }
 
-    void writeLEDTenner(int number, bool wantDot) {
-        number = number / 10;
-        if (number == 0) {
-          byte dotMask = 0;
-          if (wantDot) {
-              dotMask = dot;
-          }
-          shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, 0b00000000|dotMask);
-          return;
-        }
-        writeLEDDigit(number, wantDot);
-    }
-    void writeLEDDigit(int number, bool wantDot) {
-        if (number < 0 || number > 9) {
-          shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, minus);
-          return;
-        }
-
-        const static byte digits[] = {zero, one, two, three, four, five, six, seven, eight, nine};
-        byte dotMask = 0;
-        if (wantDot) {
-            dotMask = dot;
-        }
-        shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, digits[number]|dotMask);
-    }
 
     void showScoreOnLEDs() {
 
@@ -898,6 +902,62 @@ void wifiModeSetup() {
   b->buttonRight.attachClick(changeWifiMode);
 }
 
+//////////// Timout //////////////////
+static int timeoutTime=-1;
+static bool thereIsANewTimoutValue=false;
+
+void stopTimout() {
+    timer.detach();
+    thereIsANewTimoutValue=false;
+    startCount();
+}
+
+
+// ISR should be small
+void reduceTimout() {
+  timeoutTime--;
+  thereIsANewTimoutValue=true;
+}
+
+void showTimoutTime() {
+  if (timeoutTime <= 0) {
+      stopTimout();
+      return;
+  }
+
+  digitalWrite(TLC_LE, LOW);
+
+  writeLEDDigit(-1, false);
+  writeLEDDigit(timeoutTime%10, false);
+  writeLEDTenner(timeoutTime, false);
+  yield();
+  writeLEDDigit(timeoutTime%10, false);
+  writeLEDTenner(timeoutTime, false);
+  writeLEDDigit(-1, false);
+
+  digitalWrite(TLC_LE, HIGH);
+}
+
+void startTimeout() {
+  timeoutTime = 60;
+  thereIsANewTimoutValue=true;
+  b->buttonLeft.attachClick(stopTimout);
+  b->buttonRight.attachClick(stopTimout);
+  timer.attach(1, reduceTimout);
+}
+
+void askToStartTimout () {
+  display.clearDisplay();
+  display.setFont(&FreeSans9pt7b);
+  display.setCursor(3,15);
+  display.print("Timeout?");
+
+  showSetupMenu("Nein");
+  display.display();
+  b->buttonLeft.attachClick(startTimeout);
+  b->buttonRight.attachClick(infoPage);
+}
+
 //////////////////////////////////////
 
 void startUpOptionSetup() {
@@ -905,7 +965,9 @@ void startUpOptionSetup() {
 }
 
 void optionSetup() {
-  infoPage();
+  b->buttonLeft.attachLongPressStart(startCount);
+  b->buttonRight.attachLongPressStart(startCount);
+  askToStartTimout();
 }
 
 
@@ -1048,6 +1110,12 @@ void loop() {
     if (server) {
         server->handleClient();
     }
+
+    if (thereIsANewTimoutValue) {
+        showTimoutTime();
+        thereIsANewTimoutValue = false;
+    }
+
 }
 
 
