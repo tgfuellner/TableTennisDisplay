@@ -926,7 +926,6 @@ void showTimoutTime() {
   }
 
   digitalWrite(TLC_LE, LOW);
-
   writeLEDDigit(-1, false);
   writeLEDDigit(timeoutTime%10, false);
   writeLEDTenner(timeoutTime, false);
@@ -934,8 +933,16 @@ void showTimoutTime() {
   writeLEDDigit(timeoutTime%10, false);
   writeLEDTenner(timeoutTime, false);
   writeLEDDigit(-1, false);
-
   digitalWrite(TLC_LE, HIGH);
+
+  yield();
+
+  display.clearDisplay();
+  display.setFont(&FreeSans24pt7b);
+  display.setCursor(40,32);
+  display.print(timeoutTime);
+  showSetupMenu(NULL);
+  display.display();
 }
 
 void startTimeout() {
