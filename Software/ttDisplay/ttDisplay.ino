@@ -123,12 +123,12 @@ String nameOfPlayerWhoStartedLeft("LeftStarter");
 String nameOfPlayerWhoStartedRight("RightStarter");
 
 // Only points of Loser are stored
-// If the player which startet to Serve wins, we habe positive values
+// If the player which startet to Serve wins, we have positive values
 // otherwise negative.
 // 11:4 ==> 4
 // 8:11 ==> -8
 // 14:12 ==> 12
-// 0:11 ==> -0
+// 0:11 ==> -0    (ZERO_RESULT)
 int resultPlayerStartetToServe[MAX_GAMES+1] = {END_MARK};
 
 void gameOverSwapSide();
@@ -262,7 +262,7 @@ class Score {
     public:
     ScoreOneSide left;
     ScoreOneSide right;
-    boolean sideChanged = false;
+    boolean lastGameSideChanged = false;
 
     Score() {
         left.otherSide = &right;
@@ -279,23 +279,23 @@ class Score {
     bool playersAreOnTheSideWhereTheyStarted() {
         int totalPlayedGames = left.games + right.games;
 
-        return (totalPlayedGames % 2 == 0 && !sideChanged);
+        return (totalPlayedGames % 2 == 0 && !lastGameSideChanged);
     }
 
     void storeResult() {
         int totalPlayedGames = left.games + right.games;
         int points = (left.points > right.points) ? right.points : -left.points;
-        if (points == 0) {
+        if (right.points == 0) {
             points = ZERO_RESULT;
         }
+        if (left.points == 0) {
+            points = -ZERO_RESULT;
+        }
 
-        if (!leftStartetToServe)
+        if (lastGameSideChanged)
             points *= -1;
 
-        if (sideChanged)
-            points *= -1;
-
-        if (totalPlayedGames % 2 == 0)
+        if (totalPlayedGames % 2 == 1)
             points *= -1;
 
         resultPlayerStartetToServe[totalPlayedGames] = points;
@@ -325,7 +325,7 @@ class Score {
         left.points = right.points;
         right.points = tmp;
 
-        sideChanged = true;
+        lastGameSideChanged = true;
 
         showScore();
     }
@@ -339,7 +339,7 @@ class Score {
         else
             player = sumOfPoints % 2;
 
-        if (leftStartetToServe && !sideChanged) 
+        if (leftStartetToServe && !lastGameSideChanged) 
             return !player%2;
         else
             return player%2;
@@ -542,7 +542,7 @@ class Score {
             return;
         }
 
-        if (isLastPossibleGame() && (left.points >= 5 || right.points >=5) && !sideChanged ) {
+        if (isLastPossibleGame() && (left.points >= 5 || right.points >=5) && !lastGameSideChanged ) {
             showLongPressMenu("Seitenwechsel");
             b->buttonLeft.attachLongPressStart(::lastGameSwapSide);
             b->buttonRight.attachLongPressStart(::lastGameSwapSide);
@@ -582,7 +582,6 @@ void showExpandedPoints(int r) {
 
 void showResult() {
   b->noButtonsCommands();
-  theScore.sideChanged = false;
   theScore.storeResult();
   
   display.clearDisplay();
