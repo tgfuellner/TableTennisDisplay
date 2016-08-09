@@ -2,11 +2,12 @@
 // For 32x64 RGB LED matrix.
 
 // NOTE THIS CAN ONLY BE USED ON A MEGA! NOT ENOUGH RAM ON UNO!
+// See https://www.arduino.cc/en/Tutorial/MasterWriter
 
 #include <Adafruit_GFX.h>   // Core graphics library
 #include <RGBmatrixPanel.h> // Hardware-specific library
-//#include <Fonts/FreeSans24pt7b.h>
 #include "Ubuntu_C16pt7b.h"
+#include <Wire.h>
 
 #define OE   9
 #define LAT 10
@@ -33,18 +34,14 @@ int rightPoints = 8;
 
 bool leftIsServing = true;
 
-
-
-void setup() {
-  int x;
-
-  matrix.begin();
-  
+void showScore() {
   // fill the screen with 'black'
   matrix.fillScreen(BLACK);
   
   matrix.setFont(&Ubuntu_C16pt7b);
   matrix.setTextWrap(false); // Don't wrap at end of line - will do ourselves
+
+  int x;
 
   // Points
   if (leftPoints < 10) {
@@ -95,6 +92,26 @@ void setup() {
   }
 }
 
+void receiveEvent(int howMany) {
+  leftGames = Wire.read();
+  leftPoints = Wire.read();
+  rightGames = Wire.read();
+  rightPoints = Wire.read();
+  leftIsServing = Wire.read();
+
+  showScore();
+}
+
+void setup() {
+  Wire.begin(8);                // join i2c bus with address #8
+  Wire.onReceive(receiveEvent); // register event
+
+  matrix.begin();
+  
+  showScore();
+}
+
+
 void loop() {
-  // do nothing
+  delay(10);
 }
