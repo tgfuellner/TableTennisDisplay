@@ -26,16 +26,17 @@ const uint16_t GREEN = matrix.Color333(0,1,0);
 
 
 int leftGames = 0;
-int leftPoints = 88;
+int leftPoints = 1;
 
 int rightGames = 0;
-int rightPoints = 88;
+int rightPoints = 8;
 
 bool leftIsServing = true;
 
 
 
 void setup() {
+  int x;
 
   matrix.begin();
   
@@ -46,7 +47,12 @@ void setup() {
   matrix.setTextWrap(false); // Don't wrap at end of line - will do ourselves
 
   // Points
-  matrix.setCursor(0, 21);
+  if (leftPoints < 10) {
+      x = 9;
+  } else {
+      x = 0;
+  }
+  matrix.setCursor(x, 21);
   matrix.setTextColor(RED);
   matrix.print(leftPoints);
 
@@ -54,8 +60,13 @@ void setup() {
   matrix.setTextColor(WHITE);
   matrix.print(":");
 
+  if (rightPoints < 10) {
+      x = 43;
+  } else {
+      x = 38;
+  }
   matrix.setTextColor(RED);
-  matrix.setCursor(38, 21);
+  matrix.setCursor(x, 21);
   matrix.print(rightPoints);
 
 
