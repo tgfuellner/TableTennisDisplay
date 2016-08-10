@@ -19,18 +19,20 @@
 
 RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false, 64);
 
+const char * const SERV = "Serv";
+
 const uint16_t WHITE = matrix.Color333(1,1,1);
 const uint16_t BLACK = matrix.Color333(0,0,0);
-const uint16_t RED = matrix.Color333(2,0,0);
+const uint16_t RED = matrix.Color333(1,0,0);
 const uint16_t GREEN = matrix.Color333(0,1,0);
 
 
 
 int leftGames = 0;
-int leftPoints = 1;
+int leftPoints = 0;
 
 int rightGames = 0;
-int rightPoints = 8;
+int rightPoints = 0;
 
 bool leftIsServing = true;
 
@@ -42,15 +44,18 @@ void showScore() {
   matrix.setTextWrap(false); // Don't wrap at end of line - will do ourselves
 
   int x;
+  uint16_t color;
 
   // Points
   if (leftPoints < 10) {
       x = 9;
+      color = GREEN;
   } else {
+      color = RED;
       x = 0;
   }
   matrix.setCursor(x, 21);
-  matrix.setTextColor(RED);
+  matrix.setTextColor(color);
   matrix.print(leftPoints);
 
   matrix.setCursor(28, 19);
@@ -59,10 +64,12 @@ void showScore() {
 
   if (rightPoints < 10) {
       x = 43;
+      color = GREEN;
   } else {
       x = 38;
+      color = RED;
   }
-  matrix.setTextColor(RED);
+  matrix.setTextColor(color);
   matrix.setCursor(x, 21);
   matrix.print(rightPoints);
 
@@ -82,13 +89,13 @@ void showScore() {
 
   // Server
   if (leftIsServing) {
-      matrix.drawRect(7, 24, 10, 7, GREEN);
-      matrix.drawLine(7, 24, 16, 30, GREEN);
-      matrix.drawLine(7, 30, 16, 24, GREEN);
+      matrix.setCursor(7, 24);
+      matrix.setTextColor(GREEN);
+      matrix.print(SERV);
   } else {
-      matrix.drawRect(47, 24, 10, 7, GREEN);
-      matrix.drawLine(47, 24, 56, 30, GREEN);
-      matrix.drawLine(47, 30, 56, 24, GREEN);
+      matrix.setCursor(34, 24);
+      matrix.setTextColor(GREEN);
+      matrix.print(SERV);
   }
 }
 
