@@ -37,6 +37,8 @@ int rightPoints = 0;
 bool leftIsServing = true;
 
 void showScore() {
+  digitalWrite(OE, HIGH);   // Stop led flashing
+
   // fill the screen with 'black'
   matrix.fillScreen(BLACK);
   
@@ -97,6 +99,8 @@ void showScore() {
       matrix.setTextColor(GREEN);
       matrix.print(SERV);
   }
+
+  digitalWrite(OE, LOW);
 }
 
 void receiveEvent(int howMany) {
