@@ -63,15 +63,46 @@ module wallLeft() {
 }
 
 module wallRight() {
-    cube([CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS, RGB_PANEL_HEIGHT+2*WOOD_THICKNESS, WOOD_THICKNESS], center=true); 
+  width = CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS;
+  height = RGB_PANEL_HEIGHT+2*WOOD_THICKNESS;
+
+  difference() {
+    cube([width, height, WOOD_THICKNESS], center=true); 
+
+    translate([0, (-WOOD_THICKNESS+height)/2.0, 0])
+      createNotches(10, width, WOOD_THICKNESS, WOOD_THICKNESS);
+    translate([0, -(-WOOD_THICKNESS+height)/2.0, 0])
+      createNotches(10, width, WOOD_THICKNESS, WOOD_THICKNESS);
+
+    translate([-(-WOOD_THICKNESS+width)/2.0-0.001, 0, 0])
+      rotate(90,0,0) createNotches(6,height, WOOD_THICKNESS, WOOD_THICKNESS);
+
+  }
 }
 
 module wallTopBottom() {
-    %cube([RGB_PANEL_WIDTH+2*WOOD_THICKNESS, CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS, WOOD_THICKNESS], center=true); 
+    height = RGB_PANEL_HEIGHT+2*WOOD_THICKNESS;
+    color("red")
+    difference() {
+      cube([RGB_PANEL_WIDTH+2*WOOD_THICKNESS, CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS, WOOD_THICKNESS], center=true); 
+
+      translate([-(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,0,(-WOOD_THICKNESS+height)/2.0])
+        rotate([90,0,90]) scale(1.002) wallLeft();
+      translate([(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,0,(-WOOD_THICKNESS+height)/2.0])
+        rotate([90,0,90]) scale(1.002) wallLeft();
+    }
 }
 
 module wallBack() {
-    %cube([RGB_PANEL_WIDTH+2*WOOD_THICKNESS, RGB_PANEL_HEIGHT+2*WOOD_THICKNESS, WOOD_THICKNESS], center=true);
+    width = RGB_PANEL_WIDTH+2*WOOD_THICKNESS;
+    difference() {
+        cube([width, RGB_PANEL_HEIGHT+2*WOOD_THICKNESS, WOOD_THICKNESS], center=true);
+
+        translate([(WOOD_THICKNESS-width)/2.0,0,-(CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH)/2.0])
+          rotate([0,90,0]) scale(1.002) wallRight();
+        translate([-(WOOD_THICKNESS-width)/2.0,0,-(CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH)/2.0])
+          rotate([0,90,0]) scale(1.002) wallRight();
+    }
 }
 
 
@@ -88,7 +119,12 @@ module wallBack() {
 // z = Thickness of Material to cut
 
 module createNotches(count, width, into, z) {
-    for (notch = [1:count]) {
+    notchWidth = width/count;
+
+    for (n = [1:2:count]) {
+      echo(n);
+      translate([notchWidth*n-width/2.0,0,0])
+        cube([notchWidth, into, z+CLEARANCE], center=true);
     }
 }
 
@@ -119,20 +155,57 @@ module rgbPanel() {
   }
 }
 
+module wholeCase() {
 
-rotate([90,0,0]) rgbPanel();
+    rotate([90,0,0]) rgbPanel();
 
-translate([(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,0])
-    rotate([90,0,90]) wallRight();
+    translate([(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,0])
+        rotate([90,0,90]) wallRight();
 
-translate([-(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,0])
-    rotate([90,0,90]) wallLeft();
+    translate([-(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,0])
+        rotate([90,0,90]) wallLeft();
 
-translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
-    wallTopBottom();
+    translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
+        wallTopBottom();
 
-translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,-(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
-    wallTopBottom();
+    translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,-(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
+        wallTopBottom();
 
-translate([0,-CASE_DEPTH_INSIDE-(WOOD_THICKNESS+RGB_PANEL_DEPTH)/2.0])
-    rotate([90,0,0]) wallBack();
+    translate([0,-CASE_DEPTH_INSIDE-(WOOD_THICKNESS+RGB_PANEL_DEPTH)/2.0])
+        rotate([90,0,0]) wallBack();
+}
+
+module wholeCaseExploded() {
+    d=10;
+
+    rotate([90,0,0]) rgbPanel();
+
+    translate([d+(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,0])
+        rotate([90,0,90]) wallRight();
+
+    translate([-d-(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,0])
+        rotate([90,0,90]) wallLeft();
+
+    translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
+        wallTopBottom();
+
+    translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,-(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
+        wallTopBottom();
+
+    translate([0,-d-CASE_DEPTH_INSIDE-(WOOD_THICKNESS+RGB_PANEL_DEPTH)/2.0])
+        rotate([90,0,0]) wallBack();
+}
+
+
+//wholeCase();
+wholeCaseExploded();
+
+//wallTopBottom();
+//wallBack();
+
+/*
+difference() {
+  cube([100,20,6], center=true);
+  translate([0,-5.3,0]) createNotches(8,100,10,6);
+}
+*/
