@@ -2,6 +2,8 @@
 
 $fn=20;
 CLEARANCE=0.3;
+NOTCH_CLEARANCE = 1.002;
+EPS=0.001;
 
 WOOD_THICKNESS=6;
 CASE_DEPTH_INSIDE=110;
@@ -74,34 +76,45 @@ module wallRight() {
     translate([0, -(-WOOD_THICKNESS+height)/2.0, 0])
       createNotches(10, width, WOOD_THICKNESS, WOOD_THICKNESS);
 
-    translate([-(-WOOD_THICKNESS+width)/2.0-0.001, 0, 0])
+    translate([-(-WOOD_THICKNESS+width)/2.0-EPS, 0, 0])
       rotate(90,0,0) createNotches(6,height, WOOD_THICKNESS, WOOD_THICKNESS);
 
   }
 }
 
 module wallTopBottom() {
-    height = RGB_PANEL_HEIGHT+2*WOOD_THICKNESS;
-    color("red")
+    width = RGB_PANEL_WIDTH+2*WOOD_THICKNESS;
+    height = CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS;
+    case_height = RGB_PANEL_HEIGHT+2*WOOD_THICKNESS;
     difference() {
-      cube([RGB_PANEL_WIDTH+2*WOOD_THICKNESS, CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS, WOOD_THICKNESS], center=true); 
+      cube([width, height, WOOD_THICKNESS], center=true); 
 
-      translate([-(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,0,(-WOOD_THICKNESS+height)/2.0])
-        rotate([90,0,90]) scale(1.002) wallLeft();
-      translate([(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,0,(-WOOD_THICKNESS+height)/2.0])
-        rotate([90,0,90]) scale(1.002) wallLeft();
+      translate([0, (WOOD_THICKNESS-height)/2.0-EPS, 0])
+        createNotches(8, width, WOOD_THICKNESS, WOOD_THICKNESS);
+      translate([0, -(WOOD_THICKNESS-height)/2.0+EPS, 0])
+        createNotches(8, width, WOOD_THICKNESS, WOOD_THICKNESS);
+      translate([-(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,0,(-WOOD_THICKNESS+case_height)/2.0])
+        rotate([90,0,90]) scale(NOTCH_CLEARANCE) wallLeft();
+      translate([(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,0,(-WOOD_THICKNESS+case_height)/2.0])
+        rotate([90,0,90]) scale(NOTCH_CLEARANCE) wallLeft();
     }
 }
 
 module wallBack() {
     width = RGB_PANEL_WIDTH+2*WOOD_THICKNESS;
+    height = RGB_PANEL_HEIGHT+2*WOOD_THICKNESS;
     difference() {
-        cube([width, RGB_PANEL_HEIGHT+2*WOOD_THICKNESS, WOOD_THICKNESS], center=true);
+        cube([width, height, WOOD_THICKNESS], center=true);
 
         translate([(WOOD_THICKNESS-width)/2.0,0,-(CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH)/2.0])
-          rotate([0,90,0]) scale(1.002) wallRight();
+          rotate([0,90,0]) scale(NOTCH_CLEARANCE) wallRight();
         translate([-(WOOD_THICKNESS-width)/2.0,0,-(CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH)/2.0])
-          rotate([0,90,0]) scale(1.002) wallRight();
+          rotate([0,90,0]) scale(NOTCH_CLEARANCE) wallRight();
+
+        translate([0,(WOOD_THICKNESS-height)/2.0, (CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH)/2.0])
+          rotate([90,0,0]) scale(NOTCH_CLEARANCE) wallTopBottom();
+        translate([0,-(WOOD_THICKNESS-height)/2.0, (CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH)/2.0])
+          rotate([90,0,0]) scale(NOTCH_CLEARANCE) wallTopBottom();
     }
 }
 
@@ -200,7 +213,6 @@ module wholeCaseExploded() {
 //wholeCase();
 wholeCaseExploded();
 
-//wallTopBottom();
 //wallBack();
 
 /*
