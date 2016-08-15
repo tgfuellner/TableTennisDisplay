@@ -46,7 +46,7 @@ MOUNT_LENGTH = RGB_PANEL_HEIGHT - 2*RGB_PANEL_EDGE_BIG + 2*15;
 
 // Hole for USB Powerbank
 POWERBANK_HEIGHT = 30;
-POWERBANK_WIDTH = 95;
+POWERBANK_WIDTH = 90;
 FINGER_WIDTH = 10;
 
 // Seen from the back, referees sight
@@ -90,18 +90,20 @@ module wallRight() {
 module wallTopBottom() {
     width = RGB_PANEL_WIDTH+2*WOOD_THICKNESS;
     height = CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS;
+    ly = CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS;
     case_height = RGB_PANEL_HEIGHT+2*WOOD_THICKNESS;
     difference() {
       cube([width, height, WOOD_THICKNESS], center=true); 
 
       translate([0, (WOOD_THICKNESS-height)/2.0-EPS, 0])
         createNotches(8, width, WOOD_THICKNESS, WOOD_THICKNESS);
-      translate([0, -(WOOD_THICKNESS-height)/2.0+EPS, 0])
-        createNotches(8, width, WOOD_THICKNESS, WOOD_THICKNESS);
       translate([-(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,0,(-WOOD_THICKNESS+case_height)/2.0])
         rotate([90,0,90]) scale(NOTCH_CLEARANCE) wallLeft();
       translate([(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,0,(-WOOD_THICKNESS+case_height)/2.0])
         rotate([90,0,90]) scale(NOTCH_CLEARANCE) wallLeft();
+
+      translate([0,-RGB_PANEL_DEPTH+(-WOOD_THICKNESS+ly)/2.0,MOUNT_IN/2.0])
+        rotate([0,90,90]) scale(NOTCH_CLEARANCE) mountRight();
     }
 }
 
@@ -154,10 +156,16 @@ module mountRight() {
         rotate([0,0,90]) createNotches(10, MOUNT_LENGTH, WOOD_THICKNESS, WOOD_THICKNESS);
 
       translate([-WOOD_THICKNESS-RGB_PANEL_EDGE_SMALL+xl/2.0, -RGB_PANEL_EDGE_BIG+RGB_PANEL_HEIGHT/2.0, 0])
-        cylinder(r=RGB_PANEL_R_MOUNTING_HOLES, h=100, center=true);
+        cylinder(r=RGB_PANEL_R_MOUNTING_HOLES+CLEARANCE, h=100, center=true);
       translate([-WOOD_THICKNESS-RGB_PANEL_EDGE_SMALL+xl/2.0, RGB_PANEL_EDGE_BIG-RGB_PANEL_HEIGHT/2.0, 0])
-        cylinder(r=RGB_PANEL_R_MOUNTING_HOLES, h=100, center=true);
+        cylinder(r=RGB_PANEL_R_MOUNTING_HOLES+CLEARANCE, h=100, center=true);
+      translate([-WOOD_THICKNESS-RGB_PANEL_EDGE_SMALL+xl/2.0, 0, 0])
+        cylinder(r=RGB_PANEL_R_MOUNTING_HOLES+CLEARANCE, h=100, center=true);
     }
+}
+
+module mountLeft() {
+    mirror([1,0,0]) mountRight();
 }
 
 
@@ -196,7 +204,6 @@ module wholeCase() {
     translate([(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,0])
         rotate([90,0,90]) wallRight();
 
-    /*
     translate([-(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,0])
         rotate([90,0,90]) wallLeft();
 
@@ -208,7 +215,6 @@ module wholeCase() {
 
     translate([0,-CASE_DEPTH_INSIDE-(WOOD_THICKNESS+RGB_PANEL_DEPTH)/2.0])
         rotate([90,0,0]) wallBack();
-    */
 }
 
 module wholeCaseExploded() {
@@ -222,16 +228,27 @@ module wholeCaseExploded() {
     translate([d+(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,0])
         rotate([90,0,90]) wallRight();
 
+    translate([-(RGB_PANEL_WIDTH-MOUNT_IN+WOOD_THICKNESS)/2.0, (-RGB_PANEL_DEPTH-WOOD_THICKNESS)/2.0, 0])
+        rotate([90,0,0]) mountLeft();
+
     translate([-d-(WOOD_THICKNESS+RGB_PANEL_WIDTH)/2.0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,0])
         rotate([90,0,90]) wallLeft();
+
+    translate([0, (-RGB_PANEL_DEPTH-WOOD_THICKNESS)/2.0, (RGB_PANEL_HEIGHT+WOOD_THICKNESS-MOUNT_IN)/2.0])
+        rotate([90,-90,0]) mountRight();
+
+    translate([0, (-RGB_PANEL_DEPTH-WOOD_THICKNESS)/2.0, (-RGB_PANEL_HEIGHT-WOOD_THICKNESS+MOUNT_IN)/2.0])
+        rotate([90,90,0]) mountRight();
 
     /*
     translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
         wallTopBottom();
+    */
 
     translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,-(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
         wallTopBottom();
 
+    /*
     translate([0,-d-CASE_DEPTH_INSIDE-(WOOD_THICKNESS+RGB_PANEL_DEPTH)/2.0])
         rotate([90,0,0]) wallBack();
     */
@@ -240,6 +257,7 @@ module wholeCaseExploded() {
 
 //wholeCase();
 wholeCaseExploded();
+//wallTopBottom();
 
 //wallBack();
 
