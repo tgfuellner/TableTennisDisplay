@@ -1,5 +1,7 @@
 // Case for RGB Panel
 
+CreateDxf = 0;    // Use with command line: openscad -DCreateDxf=1 -o all.dxf rgbPanel.scad
+
 $fn=20;
 CLEARANCE=0.3;
 NOTCH_CLEARANCE = 1.002;
@@ -45,25 +47,16 @@ MOUNT_LENGTH = RGB_PANEL_HEIGHT - 2*RGB_PANEL_EDGE_BIG + 2*15;
 
 
 // Hole for USB Powerbank
-POWERBANK_HEIGHT = 30;
-POWERBANK_WIDTH = 90;
-FINGER_WIDTH = 10;
+POWERBANK_HEIGHT = 41;
+POWERBANK_WIDTH = 230;
+
+
 
 // Seen from the back, referees sight
 module wallLeft() {
-  r=3;
   difference() {
     wallRight();
 
-    minkowski() {
-        union() {
-          translate([-5,POWERBANK_HEIGHT-RGB_PANEL_HEIGHT/2.0,0])
-          cube([POWERBANK_WIDTH-2*r, POWERBANK_HEIGHT-2*r, WOOD_THICKNESS+CLEARANCE], center=true);
-          translate([-5,5+(POWERBANK_HEIGHT-RGB_PANEL_HEIGHT)/2.0,0])
-          cube([FINGER_WIDTH-2*r, POWERBANK_HEIGHT-2*r, WOOD_THICKNESS+CLEARANCE], center=true);
-        }
-        cylinder(r=r, WOOD_THICKNESS+CLEARANCE);
-    }
   }
 }
 
@@ -87,6 +80,9 @@ module wallRight() {
   }
 }
 
+module wallTop() {
+    wallTopBottom();
+}
 module wallTopBottom() {
     width = RGB_PANEL_WIDTH+2*WOOD_THICKNESS;
     height = CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS;
@@ -110,6 +106,7 @@ module wallTopBottom() {
 module wallBack() {
     width = RGB_PANEL_WIDTH+2*WOOD_THICKNESS;
     height = RGB_PANEL_HEIGHT+2*WOOD_THICKNESS;
+    r=10;
     difference() {
         cube([width, height, WOOD_THICKNESS], center=true);
 
@@ -122,6 +119,14 @@ module wallBack() {
           rotate([90,0,0]) scale(NOTCH_CLEARANCE) wallTopBottom();
         translate([0,-(WOOD_THICKNESS-height)/2.0, (CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH)/2.0])
           rotate([90,0,0]) scale(NOTCH_CLEARANCE) wallTopBottom();
+
+        minkowski() {
+            union() {
+              translate([-5,POWERBANK_HEIGHT-RGB_PANEL_HEIGHT/2.0,0])
+              cube([POWERBANK_WIDTH-2*r, POWERBANK_HEIGHT-2*r, WOOD_THICKNESS+CLEARANCE], center=true);
+            }
+            cylinder(r=r, h=WOOD_THICKNESS+CLEARANCE, $fn=70);
+        }
     }
 }
 
@@ -254,11 +259,24 @@ module wholeCaseExploded() {
     */
 }
 
-
-//wholeCase();
-wholeCaseExploded();
-//wallTopBottom();
-
-//wallBack();
-
-//wallRight();
+if (CreateDxf == 0) {
+    //wholeCase();
+    //wholeCaseExploded();
+    //wallTopBottom();
+    wallBack();
+    //wallRight();
+} else {
+    projection(cut = true) {
+        translate([160,105,0]) wallLeft();
+        translate([160,-73,0]) wallRight();
+        translate([-120,20,0]) rotate([0,0,90]) wallTop();
+        translate([20,20,0]) rotate([0,0,90]) wallTopBottom();
+        translate([-280,20,0]) rotate([0,0,90]) wallBack();
+        translate([-305,-165,0]) rotate([0,0,90]) mountRight();
+        translate([-185,-165,0]) rotate([0,0,90]) mountRight();
+        translate([-65,-165,0]) rotate([0,0,90]) mountRight();
+        translate([55,-175,0]) rotate([0,0,90]) mountRight();
+        
+        //color("red") translate([0,0,-5]) cube([750,400,2], center=true);
+    }
+}
