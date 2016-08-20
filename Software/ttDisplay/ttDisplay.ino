@@ -407,7 +407,7 @@ class Score {
             if (!matchIsFinished) indicateSending(true);
 
             const int httpPort = 80;
-            const char * host = "54.175.118.28"; // http://dweet.io/
+            const char * host = "dweet.io";
 
             String base("/dweet/for/");
             String uri = base+ssid+"?score="+ssid
