@@ -10,6 +10,15 @@ EPS=0.001;
 WOOD_THICKNESS=6;
 CASE_DEPTH_INSIDE=110;
 
+BUTTON_R = 19/2;
+BUTTON_EDGE = 35;
+
+BALL_R = 39/2;
+BALL_EDGE = 35;
+
+OLED_WIDTH_HEIGHT = 33.5;
+OLED_EDGE =23;
+
 // Values for P5 Panel
 
 RGB_PANEL_WIDTH=320;
@@ -77,11 +86,21 @@ module wallRight() {
 
     translate([-RGB_PANEL_DEPTH+(-WOOD_THICKNESS+width)/2.0,0,MOUNT_IN/2.0])
       rotate([0,90,0]) scale(NOTCH_CLEARANCE) mountRight();
+
+    translate([BUTTON_EDGE-width/2, BUTTON_EDGE-height/2, 0])
+      cylinder(r=BUTTON_R, h=WOOD_THICKNESS+CLEARANCE, center=true, $fn=70);
+
   }
 }
 
 module wallTop() {
-    wallTopBottom();
+    height = CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS;
+    difference() {
+      wallTopBottom();
+
+      translate([0, OLED_EDGE+(OLED_WIDTH_HEIGHT-height)/2])
+        cube([OLED_WIDTH_HEIGHT, OLED_WIDTH_HEIGHT, WOOD_THICKNESS+CLEARANCE], center=true); 
+    }
 }
 module wallTopBottom() {
     width = RGB_PANEL_WIDTH+2*WOOD_THICKNESS;
@@ -100,6 +119,19 @@ module wallTopBottom() {
 
       translate([0,-RGB_PANEL_DEPTH+(-WOOD_THICKNESS+ly)/2.0,MOUNT_IN/2.0])
         rotate([0,90,90]) scale(NOTCH_CLEARANCE) mountRight();
+    }
+}
+module wallBottom() {
+    width = RGB_PANEL_WIDTH+2*WOOD_THICKNESS;
+    height = CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS;
+
+    difference() {
+      wallTopBottom();
+
+      translate([BALL_EDGE-width/2, -BALL_EDGE+height/2, 0])
+        cylinder(r=BALL_R, h=WOOD_THICKNESS+CLEARANCE, center=true, $fn=70);
+      translate([-BALL_EDGE+width/2, -BALL_EDGE+height/2, 0])
+        cylinder(r=BALL_R, h=WOOD_THICKNESS+CLEARANCE, center=true, $fn=70);
     }
 }
 
@@ -122,7 +154,7 @@ module wallBack() {
 
         minkowski() {
             union() {
-              translate([-5,POWERBANK_HEIGHT-RGB_PANEL_HEIGHT/2.0,0])
+              translate([0,POWERBANK_HEIGHT-RGB_PANEL_HEIGHT/2.0,0])
               cube([POWERBANK_WIDTH-2*r, POWERBANK_HEIGHT-2*r, WOOD_THICKNESS+CLEARANCE], center=true);
             }
             cylinder(r=r, h=WOOD_THICKNESS+CLEARANCE, $fn=70);
@@ -213,10 +245,10 @@ module wholeCase() {
         rotate([90,0,90]) wallLeft();
 
     translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
-        wallTopBottom();
+        wallTop();
 
     translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,-(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
-        wallTopBottom();
+        wallBottom();
 
     translate([0,-CASE_DEPTH_INSIDE-(WOOD_THICKNESS+RGB_PANEL_DEPTH)/2.0])
         rotate([90,0,0]) wallBack();
@@ -247,11 +279,11 @@ module wholeCaseExploded() {
 
     /*
     translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
-        wallTopBottom();
+        wallTop();
     */
 
     translate([0,-(WOOD_THICKNESS+CASE_DEPTH_INSIDE)/2.0,-(WOOD_THICKNESS+RGB_PANEL_HEIGHT)/2.0])
-        wallTopBottom();
+        wallBottom();
 
     /*
     translate([0,-d-CASE_DEPTH_INSIDE-(WOOD_THICKNESS+RGB_PANEL_DEPTH)/2.0])
@@ -260,17 +292,18 @@ module wholeCaseExploded() {
 }
 
 if (CreateDxf == 0) {
-    //wholeCase();
+    wholeCase();
+    //wallTop();
     //wholeCaseExploded();
-    //wallTopBottom();
-    wallBack();
+    //wallBottom();
+    //wallBack();
     //wallRight();
 } else {
     projection(cut = true) {
         translate([160,105,0]) wallLeft();
         translate([160,-73,0]) wallRight();
         translate([-120,20,0]) rotate([0,0,90]) wallTop();
-        translate([20,20,0]) rotate([0,0,90]) wallTopBottom();
+        translate([20,20,0]) rotate([0,0,90]) wallBottom();
         translate([-280,20,0]) rotate([0,0,90]) wallBack();
         translate([-305,-165,0]) rotate([0,0,90]) mountRight();
         translate([-185,-165,0]) rotate([0,0,90]) mountRight();
