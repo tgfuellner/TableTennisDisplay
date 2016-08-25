@@ -21,11 +21,12 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false, 64);
 
 const char * const SERV = "Serv";
 
-const uint16_t WHITE = matrix.Color333(1,1,1);
+const uint16_t WHITE = matrix.Color333(2,2,2);
 const uint16_t BLACK = matrix.Color333(0,0,0);
-const uint16_t RED = matrix.Color333(1,0,0);
-const uint16_t GREEN = matrix.Color333(0,1,0);
+const uint16_t RED = matrix.Color333(2,0,0);
+const uint16_t GREEN = matrix.Color333(0,2,0);
 
+bool newDataArived = false;
 
 
 int leftGames = 0;
@@ -34,7 +35,9 @@ int leftPoints = 0;
 int rightGames = 0;
 int rightPoints = 0;
 
-bool leftIsServing = true;
+int  state = 0;  // 0 = noServer
+                 // 1 = left to serve
+                 // 2 = right to serv
 
 void showScore() {
   digitalWrite(OE, HIGH);   // Stop led flashing
@@ -90,11 +93,11 @@ void showScore() {
 
 
   // Server
-  if (leftIsServing) {
+  if (state==1) {
       matrix.setCursor(7, 24);
       matrix.setTextColor(GREEN);
       matrix.print(SERV);
-  } else {
+  } else if (state==2) {
       matrix.setCursor(34, 24);
       matrix.setTextColor(GREEN);
       matrix.print(SERV);
@@ -108,9 +111,9 @@ void receiveEvent(int howMany) {
   leftPoints = Wire.read();
   rightGames = Wire.read();
   rightPoints = Wire.read();
-  leftIsServing = Wire.read();
+  state = Wire.read();
 
-  showScore();
+  newDataArived = true;
 }
 
 void setup() {
@@ -125,4 +128,8 @@ void setup() {
 
 void loop() {
   delay(10);
+  if (newDataArived) {
+      showScore();
+      newDataArived = false;
+  }
 }

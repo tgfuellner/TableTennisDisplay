@@ -28,7 +28,7 @@ All text above, and the splash screen must be included in any redistribution
 #define Sprintf(...)
 // #define Sprintf(format, ...) (Serial.printf(format, __VA_ARGS__))
 
-const char* ssid = "TTDisplay1";
+const char* ssid = "TTDisplay2";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
 HTTPClient http;
@@ -69,43 +69,6 @@ class Buttons {
 Buttons *b;
 ESP8266WebServer *server=NULL;
 
-// Config of Shiftregister/LED driver TLC5916
-const int TLC_OE = D8;
-const int TLC_CLK = D5;
-const int TLC_SDI = D6;
-const int TLC_LE = D7;
-
-/*Segments
-    - a -
-   |     |
-   f     b
-   |     |
-    - g -
-   |     |
-   e     c
-   |     |
-    - d -   dp
-    
- Bit-order for shift register:
-  a b f g e d dp c
-*/
-
-//                   abfgedpc
-const byte zero  = 0b11101101;
-const byte one   = 0b01000001;
-const byte two   = 0b11011100;
-const byte three = 0b11010101;
-const byte four  = 0b01110001;
-const byte five  = 0b10110101;
-//                   abfgedpc
-const byte six   = 0b10111101;
-const byte seven = 0b11000001;
-const byte eight = 0b11111101;
-const byte nine  = 0b11110101;
-const byte minus = 0b00010000;
-const byte dot   = 0b00000010;
-
-
 
 // Configured at startup:
 boolean leftStartetToServe = true;
@@ -136,7 +99,6 @@ void lastGameSwapSide();
 void startCount();
 void showResult();
 void serverSetup();
-void setLEDCurrent(byte configCode);
 
 String getRes(int res) {
     if (res == ZERO_RESULT) {
@@ -212,32 +174,6 @@ void showServer(boolean isLeft) {
     display.drawFastVLine(127, 0, 64, 1);
   }
   display.display();
-}
-
-void writeLEDTenner(int number, bool wantDot) {
-    number = number / 10;
-    if (number == 0) {
-      byte dotMask = 0;
-      if (wantDot) {
-          dotMask = dot;
-      }
-      shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, 0b00000000|dotMask);
-      return;
-    }
-    writeLEDDigit(number, wantDot);
-}
-void writeLEDDigit(int number, bool wantDot) {
-    if (number < 0 || number > 9) {
-      shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, minus);
-      return;
-    }
-
-    const static byte digits[] = {zero, one, two, three, four, five, six, seven, eight, nine};
-    byte dotMask = 0;
-    if (wantDot) {
-        dotMask = dot;
-    }
-    shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, digits[number]|dotMask);
 }
 
 class ScoreOneSide {
@@ -330,7 +266,7 @@ class Score {
         showScore();
     }
 
-    boolean leftHasToServe() {
+    bool leftHasToServe() {
         int player;
         int sumOfPoints = left.points + right.points;
         if (sumOfPoints < 20) 
@@ -346,21 +282,15 @@ class Score {
     }
 
 
-    void showScoreOnLEDs() {
-
-        digitalWrite(TLC_LE, LOW);
-        bool leftServe = leftHasToServe();
-
-        writeLEDDigit(left.games, leftServe);
-        writeLEDDigit(left.points%10, leftServe);
-        writeLEDTenner(left.points, false);
-        yield();
-        writeLEDDigit(right.points%10, false);
-        writeLEDTenner(right.points, !leftServe);
-        writeLEDDigit(right.games, !leftServe);
-
-        delay(20);
-        digitalWrite(TLC_LE, HIGH);
+    void showScoreOnRGBMatrix() {
+        Wire.beginTransmission(8); // transmit to device #8
+        Wire.write(right.games);
+        Wire.write(right.points);
+        Wire.write(left.games);
+        Wire.write(left.points);
+        Wire.write(leftHasToServe()?2:1);
+        int rc = Wire.endTransmission();    // stop transmitting
+        Sprintf("showScoreOnRGBMatrix endTransmission=%d  points=%d\n", rc, left.points);
     }
 
     String getCurentResult(bool matchIsFinished) {
@@ -437,33 +367,6 @@ class Score {
         }
     }
 
-    void showBattery() {
-        display.setFont(NULL);
-        display.setCursor(2,56);
-        int batVal = analogRead(A0);
-        double voltage = map(batVal, 685, 1024, 100, 149) / 10.0;
-
-        // Alternate Bat Status and Bat Voltage
-        // avoid collision with oder Message
-        if ((left.points+right.points) % 2 == 1 
-            && left.points < 11 && right.points < 11
-            && !isLastPossibleGame()) {
-            if (voltage < 11.3) {
-                display.print("Bat leer");
-            } else if (voltage > 12.7) {
-                display.print("Bat voll");
-            } else  {
-                display.print("Bat Ok");
-            }
-        } else {
-            display.print(voltage, 1);
-            display.print("V");
-        }
-
-        // For Voltage calibration
-        //display.print(batVal);
-    }
-
     void showScoreOnOled() {
         display.clearDisplay();
         handleGameDecision();
@@ -481,8 +384,6 @@ class Score {
 
         yield();
 
-        showBattery();
-
         // Games in a smaller font
         display.setFont(&FreeSans12pt7b);
         display.setCursor(2,50);
@@ -499,7 +400,7 @@ class Score {
         showScoreOnOled();
         yield();
 
-        showScoreOnLEDs();
+        showScoreOnRGBMatrix();
         dweetScore();
     }
 
@@ -674,7 +575,7 @@ void showBrightness() {
   static char*menuTexts[] =        {"Min",      "25%",      "50%",      "75%",      "Max"};
 
   brightness = brightness % sizeof(brightnessValues);
-  setLEDCurrent(brightnessValues[brightness]);
+  //setLEDCurrent(brightnessValues[brightness]);
 
   display.clearDisplay();
   display.setCursor(3,15);
@@ -700,13 +601,13 @@ void brightnessSetup() {
 void changeServer() {
   leftStartetToServe = !leftStartetToServe;
   showServer(leftStartetToServe);
-  theScore.showScoreOnLEDs();
+  theScore.showScoreOnRGBMatrix();
 }
 
 void serverSetup() {
   display.clearDisplay();
   showServer(leftStartetToServe);
-  theScore.showScoreOnLEDs();
+  theScore.showScoreOnRGBMatrix();
   display.setCursor(3,15);
   display.print("Aufschlag?");
   showSetupMenu();
@@ -924,15 +825,13 @@ void showTimoutTime() {
       return;
   }
 
-  digitalWrite(TLC_LE, LOW);
-  writeLEDDigit(-1, false);
-  writeLEDDigit(timeoutTime%10, false);
-  writeLEDTenner(timeoutTime, false);
-  yield();
-  writeLEDDigit(timeoutTime%10, false);
-  writeLEDTenner(timeoutTime, false);
-  writeLEDDigit(-1, false);
-  digitalWrite(TLC_LE, HIGH);
+  Wire.beginTransmission(8); // transmit to device #8
+  Wire.write(0);
+  Wire.write(timeoutTime);
+  Wire.write(0);
+  Wire.write(timeoutTime);
+  Wire.write(0);
+  Wire.endTransmission();    // stop transmitting
 
   yield();
 
@@ -1017,77 +916,14 @@ void startCount() {
   b->buttonLeft.attachDoubleClick(dclickLeft);
 }
 
-void TLC_modeSwitch(bool isSpecial) {
-  digitalWrite(TLC_OE, HIGH);
-  digitalWrite(TLC_CLK, LOW);
-  digitalWrite(TLC_LE, LOW);
-  digitalWrite(TLC_CLK, HIGH);
-
-  digitalWrite(TLC_CLK, LOW);
-  digitalWrite(TLC_OE, LOW);
-  digitalWrite(TLC_CLK, HIGH);
-
-  digitalWrite(TLC_CLK, LOW);
-  digitalWrite(TLC_OE, HIGH);
-  digitalWrite(TLC_CLK, HIGH);
-
-  digitalWrite(TLC_CLK, LOW);
-  digitalWrite(TLC_LE, isSpecial);
-  digitalWrite(TLC_CLK, HIGH);
-
-  digitalWrite(TLC_CLK, LOW);
-  digitalWrite(TLC_LE, LOW);
-  digitalWrite(TLC_CLK, HIGH);
-  digitalWrite(TLC_CLK, LOW);
-}
-
-void setLEDCurrent(byte configCode) {
-  // Look at Datasheet Figure 22 on Page 25
-  // configCode == 0 --> darkest
-  //               0xff --> brightest
-
-  // Switch to special mode
-  TLC_modeSwitch(HIGH);
-
-  for (int i=0; i<6; i++) {
-    shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, configCode);
-  }
-  delay(20);
-  //digitalWrite(TLC_CLK, LOW);
-  digitalWrite(TLC_LE, HIGH);
-  //digitalWrite(TLC_CLK, HIGH);
-
-  // Switch to normal mode
-  TLC_modeSwitch(LOW);
-  digitalWrite(TLC_OE, LOW);
-}
-
-
 void setup()   {                
   Serial.begin(115200);  Sprintln("Start");
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  Wire.setClockStretchLimit(1000);
   
   display.setTextSize(1);
   display.setTextColor(WHITE);
-
-  pinMode(TLC_OE, OUTPUT);
-  pinMode(TLC_LE, OUTPUT);
-  pinMode(TLC_CLK, OUTPUT);
-  pinMode(TLC_SDI, OUTPUT);
-
-  setLEDCurrent(0b00000011);    // 50%
-
-  digitalWrite(TLC_OE, LOW);  // Enable all Segments
-  digitalWrite(TLC_LE, LOW);
-  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, nine);
-  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, eight);
-  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, seven);
-  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, six);
-  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, five);
-  shiftOut(TLC_SDI, TLC_CLK, MSBFIRST, four);
-  delay(20);
-  digitalWrite(TLC_LE, HIGH);
 
   delay(100);
 

@@ -1,7 +1,7 @@
 # TableTennisDisplay
 Display for counting Table Tennis Matches
 
-## Components of the Display
+## Components of the Display for Version 1 with 7-Segment LEDs
 
 * esp8266 (Wemos D1 mini)
  * Send data to LED Driver Shift Register TLC5916IN 
@@ -22,7 +22,24 @@ Display for counting Table Tennis Matches
 * LED Driver Shift Register TLC5916IN 
  * [Datasheet](http://docs-europe.electrocomponents.com/webdocs/12f7/0900766b812f7b59.pdf)
 
-* Small OLED Display sdd1306 for umpire feedback and guidance
+* Small OLED Display ssd1306 for umpire feedback and guidance
+
+## Components of the Display for Version 1 with 7-Segment LEDs
+
+* esp8266 (Wemos D1 mini)
+ * Send data to RGB Matrix over i2c to HUB75 Controler
+ * queries state of the buttons
+ * controlls the OLED display
+ * implements counting behavieour
+ * Runs with 3.3V
+
+* Powered by Stock 5V USB Powerbank
+
+* HUB75 64x32 RGB Matrix
+
+* HUB75 Controler: Arduino Mega
+
+* Small OLED Display ssd1306 for umpire feedback and guidance
 
 ## Counting behaviour
 
