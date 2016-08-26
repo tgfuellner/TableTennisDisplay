@@ -23,11 +23,14 @@ All text above, and the splash screen must be included in any redistribution
 #include <ESP8266HTTPClient.h>
 #include <Ticker.h>
 
+
+
 #define Sprintln(a)
 // #define Sprintln(a) (Serial.println(a))
 #define Sprintf(...)
 // #define Sprintf(format, ...) (Serial.printf(format, __VA_ARGS__))
 
+const char* TT_VERSION = "Version: 2";
 const char* ssid = "TTDisplay2";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
@@ -49,13 +52,19 @@ class Buttons {
     // before Wifi setup
     OneButton buttonRight;
     OneButton buttonLeft;
+    OneButton backRight;
+    OneButton backLeft;
                                 // second Parameter true means active Low with internal Pullup
-    Buttons() : buttonRight(D3, true), buttonLeft(D4, true) {
+    Buttons() : buttonRight(D3, true), buttonLeft(D4, true), backRight(D5, true), backLeft(D6, true) {
         // D3 and D4 on Wemos have external Pullup
         digitalWrite(D3, LOW);   // turn off pullUp resistor
         digitalWrite(D4, LOW);   // turn off pullUp resistor
+        pinMode(D5, INPUT_PULLUP);   // turn on pullUp resistor
+        pinMode(D6, INPUT_PULLUP);   // turn on pullUp resistor
         buttonRight.setClickTicks(250);
         buttonLeft.setClickTicks(250);
+        backRight.setClickTicks(150);
+        backLeft.setClickTicks(150);
     }
 
     void noButtonsCommands() {
@@ -63,6 +72,10 @@ class Buttons {
         buttonLeft.attachClick(NULL);
         buttonRight.attachDoubleClick(NULL);
         buttonLeft.attachDoubleClick(NULL);
+        backRight.attachClick(NULL);
+        backLeft.attachClick(NULL);
+        backRight.attachDoubleClick(NULL);
+        backLeft.attachDoubleClick(NULL);
     }
 };
 
@@ -666,6 +679,9 @@ void showInfoPage() {
       display.println("\nnicht im Netz!");
   }
 
+  display.setCursor(33, 50);
+  display.print(TT_VERSION);
+
   showSetupMenu(NULL);
   display.display();
 }
@@ -912,6 +928,8 @@ void startCount() {
   defaultLongPressAction();
   b->buttonRight.attachClick(clickRight);
   b->buttonLeft.attachClick(clickLeft);
+  b->backRight.attachClick(dclickRight);
+  b->backLeft.attachClick(dclickLeft);
   b->buttonRight.attachDoubleClick(dclickRight);
   b->buttonLeft.attachDoubleClick(dclickLeft);
 }
@@ -947,6 +965,8 @@ void setup()   {
 void loop() {
     b->buttonRight.tick();
     b->buttonLeft.tick();
+    b->backRight.tick();
+    b->backLeft.tick();
     delay(10);
 
     if (server) {
