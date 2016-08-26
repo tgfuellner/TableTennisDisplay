@@ -35,7 +35,7 @@ int leftPoints = 0;
 int rightGames = 0;
 int rightPoints = 0;
 
-int  state = 0;  // 0 = noServer
+int  state = 0;  // 0 = Timeout
                  // 1 = left to serve
                  // 2 = right to serv
 
@@ -50,6 +50,24 @@ void showScore() {
 
   int x;
   uint16_t color;
+
+  if (state == 0) {
+      // Timeout
+      if (leftPoints < 10) {
+          x = 27;
+      } else {
+          x = 18;
+      }
+      color = GREEN;
+      if (leftPoints < 11) {
+          color = RED;
+      }
+      matrix.setCursor(x, 26);
+      matrix.setTextColor(color);
+      matrix.print(leftPoints);
+      digitalWrite(OE, LOW);
+      return;
+  }
 
   // Points
   if (leftPoints < 10) {
@@ -83,22 +101,22 @@ void showScore() {
   matrix.setFont(NULL);
   matrix.setTextSize(1);     // size 1 == 8 pixels high
 
-  matrix.setCursor(0, 24);
+  matrix.setCursor(1, 24);
   matrix.setTextColor(WHITE);
   matrix.print(leftGames);
 
-  matrix.setCursor(59, 24);
+  matrix.setCursor(58, 24);
   matrix.setTextColor(WHITE);
   matrix.print(rightGames);
 
 
-  // Server
+  // Misc Server, Timout
   if (state==1) {
-      matrix.setCursor(7, 24);
+      matrix.setCursor(8, 24);
       matrix.setTextColor(GREEN);
       matrix.print(SERV);
   } else if (state==2) {
-      matrix.setCursor(34, 24);
+      matrix.setCursor(33, 24);
       matrix.setTextColor(GREEN);
       matrix.print(SERV);
   }
