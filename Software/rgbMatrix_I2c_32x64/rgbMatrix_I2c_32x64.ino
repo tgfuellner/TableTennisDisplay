@@ -25,6 +25,7 @@ const uint16_t WHITE = matrix.Color333(2,2,2);
 const uint16_t BLACK = matrix.Color333(0,0,0);
 const uint16_t RED = matrix.Color333(2,0,0);
 const uint16_t GREEN = matrix.Color333(0,2,0);
+const uint16_t YELLOWISH = matrix.Color333(3,3,1);
 
 bool newDataArived = false;
 
@@ -110,7 +111,7 @@ void showScore() {
   matrix.print(rightGames);
 
 
-  // Misc Server, Timout
+  // Server
   if (state==1) {
       matrix.setCursor(8, 24);
       matrix.setTextColor(GREEN);
@@ -120,6 +121,23 @@ void showScore() {
       matrix.setTextColor(GREEN);
       matrix.print(SERV);
   }
+
+  digitalWrite(OE, LOW);
+}
+
+void showGreeting() {
+  digitalWrite(OE, HIGH);   // Stop led flashing
+
+  // fill the screen with 'black'
+  matrix.fillScreen(BLACK);
+  
+  matrix.setFont(&Ubuntu_C16pt7b);
+  matrix.setTextWrap(false); // Don't wrap at end of line - will do ourselves
+
+
+  matrix.setCursor(0, 26);
+  matrix.setTextColor(YELLOWISH);
+  matrix.print("Hallo");
 
   digitalWrite(OE, LOW);
 }
@@ -140,7 +158,7 @@ void setup() {
 
   matrix.begin();
   
-  showScore();
+  showGreeting();
 }
 
 
