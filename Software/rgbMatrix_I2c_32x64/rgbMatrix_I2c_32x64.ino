@@ -7,6 +7,7 @@
 #include <Adafruit_GFX.h>   // Core graphics library
 #include <RGBmatrixPanel.h> // Hardware-specific library
 #include "Ubuntu_C16pt7b.h"
+#include <Fonts/FreeSans9pt7b.h>
 #include <Wire.h>
 
 #define OE   9
@@ -19,9 +20,8 @@
 
 RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false, 64);
 
-const char * const SERV = "Serv";
-
-const uint16_t WHITE = matrix.Color333(0,0,1);
+const uint16_t WHITE = matrix.Color333(1,1,1);
+const uint16_t BLUE = matrix.Color333(0,0,1);
 const uint16_t BLACK = matrix.Color333(0,0,0);
 const uint16_t RED = matrix.Color333(1,0,0);
 const uint16_t GREEN = matrix.Color333(0,1,0);
@@ -37,9 +37,12 @@ int leftPoints = 0;
 int rightGames = 0;
 int rightPoints = 0;
 
-int  state = 0;  // 0 = Timeout
-                 // 1 = left to serve
-                 // 2 = right to serv
+enum State {
+    timeout = 0,
+    left = 1, right = 2    // Side to serve
+};
+State state = timeout;
+
 
 void showScore() {
   digitalWrite(OE, HIGH);   // Stop led flashing
@@ -53,8 +56,7 @@ void showScore() {
   int x;
   uint16_t color;
 
-  if (state == 0) {
-      // Timeout
+  if (state == timeout) {
       if (leftPoints < 10) {
           x = 27;
       } else {
@@ -71,56 +73,63 @@ void showScore() {
       return;
   }
 
-  // Points
+  // Left Points and Games
   if (leftPoints < 10) {
-      x = 9;
+      x = 8;
       color = GREEN;
+
+      matrix.setFont(&FreeSans9pt7b);
+      matrix.setTextColor(BLUE);
+      matrix.setCursor(-1, 31);
+      matrix.print(leftGames);
   } else {
       color = RED;
       x = 0;
+
+      matrix.setFont(NULL);
+      matrix.setTextColor(BLUE);
+      matrix.setTextSize(1);     // size 1 == 8 pixels high
+      matrix.setCursor(1, 24);
+      matrix.print(leftGames);
   }
+  matrix.setFont(&Ubuntu_C16pt7b);
   matrix.setCursor(x, 21);
   matrix.setTextColor(color);
   matrix.print(leftPoints);
 
   matrix.setCursor(28, 19);
-  matrix.setTextColor(WHITE);
+  matrix.setTextColor(BLUE);
   matrix.print(":");
 
   if (rightPoints < 10) {
       x = 43;
       color = GREEN;
+
+      matrix.setFont(&FreeSans9pt7b);
+      matrix.setTextColor(BLUE);
+      matrix.setCursor(54, 31);
+      matrix.print(rightGames);
   } else {
       x = 38;
       color = RED;
+
+      matrix.setFont(NULL);
+      matrix.setTextColor(BLUE);
+      matrix.setTextSize(1);     // size 1 == 8 pixels high
+      matrix.setCursor(58, 24);
+      matrix.print(rightGames);
   }
+  matrix.setFont(&Ubuntu_C16pt7b);
   matrix.setTextColor(color);
   matrix.setCursor(x, 21);
   matrix.print(rightPoints);
 
 
-  // Games
-  matrix.setFont(NULL);
-  matrix.setTextSize(1);     // size 1 == 8 pixels high
-
-  matrix.setCursor(1, 24);
-  matrix.setTextColor(WHITE);
-  matrix.print(leftGames);
-
-  matrix.setCursor(58, 24);
-  matrix.setTextColor(WHITE);
-  matrix.print(rightGames);
-
-
   // Server
-  if (state==1) {
-      matrix.setCursor(8, 24);
-      matrix.setTextColor(GREEN);
-      matrix.print(SERV);
-  } else if (state==2) {
-      matrix.setCursor(33, 24);
-      matrix.setTextColor(GREEN);
-      matrix.print(SERV);
+  if (state==left) {
+      matrix.fillCircle(14,27,3,GREEN);
+  } else if (state==right) {
+      matrix.fillCircle(49,27,3,GREEN);
   }
 
   digitalWrite(OE, LOW);
@@ -148,10 +157,21 @@ void receiveEvent(int howMany) {
   leftPoints = Wire.read();
   rightGames = Wire.read();
   rightPoints = Wire.read();
-  state = Wire.read();
+  state = static_cast<State>(Wire.read());
 
   newDataArived = true;
 }
+
+void testScore(int lg,int lp, int rg,int rp, State s) {
+  leftGames = lg;
+  leftPoints = lp;
+  rightGames = rg;
+  rightPoints = rp;
+  state = s;
+
+  newDataArived = true;
+}
+
 
 void setup() {
   Wire.begin(8);                // join i2c bus with address #8
@@ -159,7 +179,8 @@ void setup() {
 
   matrix.begin();
   
-  showGreeting();
+  testScore(3,11, 2,9, right);
+  //showGreeting();
 }
 
 
