@@ -20,13 +20,12 @@
 
 RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false, 64);
 
-const uint16_t WHITE = matrix.Color333(1,1,1);
-const uint16_t BLUE = matrix.Color333(0,0,1);
-const uint16_t BLACK = matrix.Color333(0,0,0);
-const uint16_t RED = matrix.Color333(1,0,0);
-const uint16_t GREEN = matrix.Color333(0,1,0);
-//const uint16_t YELLOWISH = matrix.Color888(16,0,0);  das dunkelste
-const uint16_t YELLOWISH = matrix.Color333(1,0,0);
+uint16_t WHITE;
+uint16_t BLUE;
+uint16_t BLACK;
+uint16_t RED;
+uint16_t GREEN;
+uint16_t GREETING;
 
 bool newDataArived = false;
 
@@ -39,9 +38,20 @@ int rightPoints = 0;
 
 enum State {
     timeout = 0,
-    left = 1, right = 2    // Side to serve
+    left = 1, right = 2,    // Side to serve
+    brightnessAdjust = 3,   // In leftGames is brightness value
 };
 State state = timeout;
+
+
+void setBrightness(int brightness) {
+  WHITE = matrix.Color333(brightness,brightness,brightness);
+  BLUE = matrix.Color333(0,0,brightness);
+  BLACK = matrix.Color333(0,0,0);
+  RED = matrix.Color333(brightness,0,0);
+  GREEN = matrix.Color333(0,brightness,0);
+  GREETING = matrix.Color333(brightness,0,0);
+}
 
 
 void showScore() {
@@ -146,10 +156,19 @@ void showGreeting() {
 
 
   matrix.setCursor(0, 26);
-  matrix.setTextColor(YELLOWISH);
+  matrix.setTextColor(GREETING);
   matrix.print("Hallo");
 
   digitalWrite(OE, LOW);
+}
+
+void afterValueReceived() {
+  if (state==brightnessAdjust) {
+      setBrightness(leftGames);
+      return;
+  }
+
+  newDataArived = true;
 }
 
 void receiveEvent(int howMany) {
@@ -159,7 +178,7 @@ void receiveEvent(int howMany) {
   rightPoints = Wire.read();
   state = static_cast<State>(Wire.read());
 
-  newDataArived = true;
+  afterValueReceived();
 }
 
 void testScore(int lg,int lp, int rg,int rp, State s) {
@@ -169,7 +188,7 @@ void testScore(int lg,int lp, int rg,int rp, State s) {
   rightPoints = rp;
   state = s;
 
-  newDataArived = true;
+  afterValueReceived();
 }
 
 
@@ -178,9 +197,11 @@ void setup() {
   Wire.onReceive(receiveEvent); // register event
 
   matrix.begin();
+  setBrightness(1);
   
-  testScore(3,11, 2,9, right);
-  //showGreeting();
+  //testScore(1,0, 0,0, brightnessAdjust);
+  //testScore(3,11, 2,9, left);
+  showGreeting();
 }
 
 
