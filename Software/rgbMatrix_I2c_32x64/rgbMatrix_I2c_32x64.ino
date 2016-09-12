@@ -21,11 +21,12 @@ RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false, 64);
 
 const char * const SERV = "Serv";
 
-const uint16_t WHITE = matrix.Color333(2,2,2);
+const uint16_t WHITE = matrix.Color333(0,0,1);
 const uint16_t BLACK = matrix.Color333(0,0,0);
-const uint16_t RED = matrix.Color333(2,0,0);
-const uint16_t GREEN = matrix.Color333(0,2,0);
-const uint16_t YELLOWISH = matrix.Color333(3,3,1);
+const uint16_t RED = matrix.Color333(1,0,0);
+const uint16_t GREEN = matrix.Color333(0,1,0);
+//const uint16_t YELLOWISH = matrix.Color888(16,0,0);  das dunkelste
+const uint16_t YELLOWISH = matrix.Color333(1,0,0);
 
 bool newDataArived = false;
 
