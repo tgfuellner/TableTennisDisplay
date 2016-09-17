@@ -4,6 +4,7 @@
 // NOTE THIS CAN ONLY BE USED ON A MEGA! NOT ENOUGH RAM ON UNO!
 // See https://www.arduino.cc/en/Tutorial/MasterWriter
 
+#include <EEPROM.h>
 #include <Adafruit_GFX.h>   // Core graphics library
 #include <RGBmatrixPanel.h> // Hardware-specific library
 #include "Ubuntu_C16pt7b.h"
@@ -54,6 +55,36 @@ void setBrightness(int brightness) {
 }
 
 
+
+#define CONFIG_VERSION "td1"
+#define CONFIG_START 32
+struct StoreStruct {
+  char version[4];  // This is for mere detection if they are your settings
+  int brightness;   // The variables of your settings
+};
+StoreStruct storage = {CONFIG_VERSION, 1};
+
+void loadConfig() {
+  // To make sure there are settings, and they are YOURS!
+  // If nothing is found it will use the default settings.
+  if (EEPROM.read(CONFIG_START + 0) == CONFIG_VERSION[0] &&
+      EEPROM.read(CONFIG_START + 1) == CONFIG_VERSION[1] &&
+      EEPROM.read(CONFIG_START + 2) == CONFIG_VERSION[2]) {
+
+    for (unsigned int t=0; t<sizeof(storage); t++)
+      *((char*)&storage + t) = EEPROM.read(CONFIG_START + t);
+
+    setBrightness(storage.brightness);
+  }
+}
+
+void saveConfig() {
+  for (unsigned int t=0; t<sizeof(storage); t++)
+    EEPROM.write(CONFIG_START + t, *((char*)&storage + t));
+}
+
+
+
 void showScore() {
   digitalWrite(OE, HIGH);   // Stop led flashing
 
@@ -89,7 +120,7 @@ void showScore() {
       color = GREEN;
 
       matrix.setFont(&FreeSans9pt7b);
-      matrix.setTextColor(BLUE);
+      matrix.setTextColor(RED);
       matrix.setCursor(-1, 31);
       matrix.print(leftGames);
   } else {
@@ -97,7 +128,7 @@ void showScore() {
       x = 0;
 
       matrix.setFont(NULL);
-      matrix.setTextColor(BLUE);
+      matrix.setTextColor(RED);
       matrix.setTextSize(1);     // size 1 == 8 pixels high
       matrix.setCursor(1, 24);
       matrix.print(leftGames);
@@ -108,7 +139,7 @@ void showScore() {
   matrix.print(leftPoints);
 
   matrix.setCursor(28, 19);
-  matrix.setTextColor(BLUE);
+  matrix.setTextColor(RED);
   matrix.print(":");
 
   if (rightPoints < 10) {
@@ -116,15 +147,15 @@ void showScore() {
       color = GREEN;
 
       matrix.setFont(&FreeSans9pt7b);
-      matrix.setTextColor(BLUE);
-      matrix.setCursor(54, 31);
+      matrix.setTextColor(RED);
+      matrix.setCursor(55, 31);
       matrix.print(rightGames);
   } else {
       x = 38;
       color = RED;
 
       matrix.setFont(NULL);
-      matrix.setTextColor(BLUE);
+      matrix.setTextColor(RED);
       matrix.setTextSize(1);     // size 1 == 8 pixels high
       matrix.setCursor(58, 24);
       matrix.print(rightGames);
@@ -165,6 +196,8 @@ void showGreeting() {
 void afterValueReceived() {
   if (state==brightnessAdjust) {
       setBrightness(leftGames);
+      storage.brightness = leftGames;
+      saveConfig();
       return;
   }
 
@@ -198,6 +231,7 @@ void setup() {
 
   matrix.begin();
   setBrightness(1);
+  loadConfig();
   
   //testScore(1,0, 0,0, brightnessAdjust);
   //testScore(3,11, 2,9, left);
