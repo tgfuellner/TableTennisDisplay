@@ -61,8 +61,8 @@ class Buttons {
         digitalWrite(D4, LOW);   // turn off pullUp resistor
         pinMode(D5, INPUT_PULLUP);   // turn on pullUp resistor
         pinMode(D6, INPUT_PULLUP);   // turn on pullUp resistor
-        buttonRight.setClickTicks(250);
-        buttonLeft.setClickTicks(250);
+        buttonRight.setClickTicks(200);
+        buttonLeft.setClickTicks(200);
         backRight.setClickTicks(150);
         backLeft.setClickTicks(150);
     }
@@ -86,7 +86,7 @@ ESP8266WebServer *server=NULL;
 // Configured at startup:
 boolean leftStartetToServe = true;
 int gamesNeededToWinMatch = 3;
-int brightness = 2;   // 50%
+int brightness = 0;   // darkest
 bool wantToJoinNetwork = true;
 IPAddress ip;
 
@@ -583,12 +583,27 @@ void showSetupMenu(char *rightMsg="Wechsel") {
 
 //////////////////////////////////////
 
+void setBrightnessOnRGBMatrix(int bright) {
+  Wire.beginTransmission(8); // transmit to device #8
+  Wire.write(bright);
+  Wire.write(bright);
+  Wire.write(bright);
+  Wire.write(bright);
+  Wire.write(3);
+  int rc = Wire.endTransmission();    // stop transmitting
+  Sprintf("setBrightnessOnRGBMatrix endTransmission=%d  points=%d\n", rc, left.points);
+}
+
 void showBrightness() {
-  static byte brightnessValues[] = {0b00000000, 0b00000001, 0b00000011, 0b00000111, 0b11111111};
+  static byte brightnessValues[] = {1, 2, 3, 4, 5};
   static char*menuTexts[] =        {"Min",      "25%",      "50%",      "75%",      "Max"};
 
   brightness = brightness % sizeof(brightnessValues);
-  //setLEDCurrent(brightnessValues[brightness]);
+  setBrightnessOnRGBMatrix(brightnessValues[brightness]);
+  delay(20);
+
+  // Geht nicht?!:
+  //theScore.showScoreOnRGBMatrix();
 
   display.clearDisplay();
   display.setCursor(3,15);
@@ -873,7 +888,7 @@ void askToStartTimout () {
   display.setCursor(3,15);
   display.print("Timeout?");
 
-  showSetupMenu("Nein");
+  showSetupMenu("Einst.");
   display.display();
   b->buttonLeft.attachClick(startTimeout);
   b->buttonRight.attachClick(infoPage);
@@ -881,8 +896,12 @@ void askToStartTimout () {
 
 //////////////////////////////////////
 
-void startUpOptionSetup() {
-  wifiModeSetup();
+void startUpOptionSetup(bool wantWifiSetup) {
+  if (wantWifiSetup) {
+    wifiModeSetup();
+  } else {
+    serverSetup();
+  }
 }
 
 void optionSetup() {
@@ -930,8 +949,17 @@ void startCount() {
   b->buttonLeft.attachClick(clickLeft);
   b->backRight.attachClick(dclickRight);
   b->backLeft.attachClick(dclickLeft);
-  b->buttonRight.attachDoubleClick(dclickRight);
-  b->buttonLeft.attachDoubleClick(dclickLeft);
+  //b->buttonRight.attachDoubleClick(dclickRight);
+  //b->buttonLeft.attachDoubleClick(dclickLeft);
+}
+
+bool buttonIsPressed() {
+  if  (digitalRead(D3) == LOW) return true;
+  if  (digitalRead(D4) == LOW) return true;
+  if  (digitalRead(D5) == LOW) return true;
+  if  (digitalRead(D6) == LOW) return true;
+
+  return false;
 }
 
 void setup()   {                
@@ -957,9 +985,8 @@ void setup()   {
   // allow reuse (if server supports it)
   http.setReuse(true);
 
-
   // Start Options query
-  startUpOptionSetup();
+  startUpOptionSetup(buttonIsPressed());
 }
 
 void loop() {
