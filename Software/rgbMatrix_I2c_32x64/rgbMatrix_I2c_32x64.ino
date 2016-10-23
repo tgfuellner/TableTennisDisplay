@@ -11,13 +11,14 @@
 #include <Fonts/FreeSans9pt7b.h>
 #include <Wire.h>
 
-#define OE   9
-#define LAT 10
-#define CLK 11
-#define A   A0
-#define B   A1
-#define C   A2
-#define D   A3
+//           Atmega128     Atmega2560
+#define OE   25 // 9
+#define LAT  24 // 10
+#define CLK  23 // 11
+#define A    28 // A0
+#define B    29 // A1
+#define C    30 // A2
+#define D    31 // A3
 
 RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false, 64);
 
