@@ -24,7 +24,7 @@ Display for counting Table Tennis Matches
 
 * Small OLED Display ssd1306 for umpire feedback and guidance
 
-## Components of the Display for Version 1 with 7-Segment LEDs
+## Components of the Display for Version 2 with Hub75 64x32 RGB Matrix
 
 * esp8266 (Wemos D1 mini)
  * Send data to RGB Matrix over i2c to HUB75 Controler
@@ -38,6 +38,24 @@ Display for counting Table Tennis Matches
 * HUB75 64x32 RGB Matrix
 
 * HUB75 Controler: Arduino Mega
+
+* Small OLED Display ssd1306 for umpire feedback and guidance
+
+## Components of the Display for Version 3 with Hub75 64x32 RGB Matrix
+
+* esp8266 (Wemos D1 mini)
+ * Send data to RGB Matrix over i2c to HUB75 Controler
+ * queries state of the buttons
+ * controlls the OLED display
+ * implements counting behavieour
+ * Runs with 3.3V
+
+* Powered by Stock 5V USB Powerbank
+
+* HUB75 64x32 RGB Matrix
+
+* HUB75 Controler: Custom made Atmega128 board
+ * See https://easyeda.com/thomas.gfuellner/TTDisplay64x32-LDrpmkwus
 
 * Small OLED Display ssd1306 for umpire feedback and guidance
 

@@ -31,7 +31,7 @@ All text above, and the splash screen must be included in any redistribution
 // #define Sprintf(format, ...) (Serial.printf(format, __VA_ARGS__))
 
 const char* TT_VERSION = "Version: 2";
-const char* ssid = "TTDisplay2";
+const char* ssid = "TTDisplay3";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
 HTTPClient http;
