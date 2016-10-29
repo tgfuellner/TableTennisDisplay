@@ -30,8 +30,8 @@ All text above, and the splash screen must be included in any redistribution
 #define Sprintf(...)
 // #define Sprintf(format, ...) (Serial.printf(format, __VA_ARGS__))
 
-const char* TT_VERSION = "Version: 2";
-const char* ssid = "TTDisplay3";
+const char* TT_VERSION = "Version: 3";
+const char* ssid = "TTDisplay2";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
 HTTPClient http;
@@ -288,10 +288,15 @@ class Score {
         else
             player = sumOfPoints % 2;
 
-        if (leftStartetToServe && !lastGameSideChanged) 
-            return !player%2;
+        if (leftStartetToServe) 
+            player = !player%2;
         else
-            return player%2;
+            player = player%2;
+
+        if (lastGameSideChanged)
+            return !player;
+        else
+            return player;
     }
 
 
