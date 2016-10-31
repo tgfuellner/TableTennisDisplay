@@ -12,6 +12,11 @@ CASE_DEPTH_INSIDE=110;
 
 BUTTON_R = 19/2;
 BUTTON_EDGE = 35;
+BACK_BUTTON_R = 16/2;
+BACK_BUTTON_EDGE = 60;
+POWERSWITCH_WIDTH = 8.5;
+POWERSWITCH_HEIGHT = 13.2;
+POWERSWITCH_EDGE = BUTTON_EDGE;
 
 BALL_R = 39/2;
 BALL_EDGE = 35;
@@ -64,12 +69,24 @@ POWERBANK_WIDTH = 230;
 // Seen from the back, referees sight
 module wallLeft() {
   difference() {
-    wallRight();
+    wallSide();
 
   }
 }
 
 module wallRight() {
+  width = CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS;
+  height = RGB_PANEL_HEIGHT+2*WOOD_THICKNESS;
+
+  difference() {
+    wallSide();
+
+    translate([-POWERSWITCH_EDGE+width/2, -POWERSWITCH_EDGE+height/2, 0])
+      cube([POWERSWITCH_WIDTH, POWERSWITCH_HEIGHT, WOOD_THICKNESS+CLEARANCE], center=true);
+  }
+}
+
+module wallSide() {
   width = CASE_DEPTH_INSIDE+RGB_PANEL_DEPTH+WOOD_THICKNESS;
   height = RGB_PANEL_HEIGHT+2*WOOD_THICKNESS;
 
@@ -89,6 +106,9 @@ module wallRight() {
 
     translate([BUTTON_EDGE-width/2, BUTTON_EDGE-height/2, 0])
       cylinder(r=BUTTON_R, h=WOOD_THICKNESS+CLEARANCE, center=true, $fn=70);
+
+    translate([BACK_BUTTON_EDGE-width/2, BACK_BUTTON_EDGE-height/2, 0])
+      cylinder(r=BACK_BUTTON_R, h=WOOD_THICKNESS+CLEARANCE, center=true, $fn=70);
 
   }
 }
