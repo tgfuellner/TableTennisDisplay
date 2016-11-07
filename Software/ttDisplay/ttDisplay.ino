@@ -3,7 +3,7 @@ Table Tennis Score Board
 
 Written by Thomas Gfüllner
 BSD license
-All text above, and the splash screen must be included in any redistribution
+All text above must be included in any redistribution
 *********************************************************************/
 
 #include <SPI.h>
@@ -88,7 +88,6 @@ boolean leftStartetToServe = true;
 int gamesNeededToWinMatch = 3;
 int brightness = 0;   // darkest
 bool wantToJoinNetwork = true;
-IPAddress ip;
 
 // The Result:
 const int MAX_GAMES = 9;
@@ -110,8 +109,17 @@ int resultPlayerStartetToServe[MAX_GAMES+1] = {END_MARK};
 void gameOverSwapSide();
 void lastGameSwapSide();
 void startCount();
+void startCountAndHttpServer();
 void showResult();
 void serverSetup();
+
+IPAddress getIp() {
+    if (WiFi.status() == WL_CONNECTED) {
+        return WiFi.localIP();
+    } else {
+        return WiFi.softAPIP();
+    }
+}
 
 String getRes(int res) {
     if (res == ZERO_RESULT) {
@@ -321,6 +329,8 @@ class Score {
         if (matchIsFinished) {
             return result;
         }
+
+        result += "| ";
 
         if (playersAreOnTheSideWhereTheyStarted()) {
             return result + left.points + ":" + right.points;
@@ -649,7 +659,7 @@ void serverSetup() {
   showSetupMenu();
   display.display();
 
-  b->buttonLeft.attachClick(startCount);
+  b->buttonLeft.attachClick(startCountAndHttpServer);
   b->buttonRight.attachClick(changeServer);
 }
 
@@ -692,7 +702,7 @@ void showInfoPage() {
 
   display.setFont(NULL);
   display.setCursor(0, 0);
-  display.print("IP="); display.println(ip);
+  display.print("IP="); display.println(getIp());
 
   if (wantToJoinNetwork) {
       display.println("\nTicker=");
@@ -755,7 +765,7 @@ void showEnterPlayerNames() {
   display.setFont(NULL);
   display.setCursor(0,0);
   display.print("Spieler eingeben mit:\n\n");
-  display.print(ip); display.print("/setNames");
+  display.print(getIp()); display.print("/setNames");
 
   showSetupMenu("Weiter");
   display.display();
@@ -768,6 +778,15 @@ void enterPlayerNames() {
 }
 
 //////////////////////////////////////
+
+void startServer() {
+  if (server == NULL) {
+    server = new ESP8266WebServer(80);
+    server->on("/", handleRoot);
+    server->on("/setNames", handleSetNames);
+    server->begin();
+  }
+}
 
 void doWifiMode() {
   WiFiManager wifiManager;
@@ -790,7 +809,7 @@ void doWifiMode() {
       display.display();
 
       if(wifiManager.autoConnect(ssid, password)) {
-        ip = WiFi.localIP();
+        // ip = WiFi.localIP();
       } else {
         // failed to connect and hit timeout
       }
@@ -798,14 +817,10 @@ void doWifiMode() {
       wifiManager.resetSettings();
       // AP mode
       WiFi.softAP(ssid, password);
-      ip = WiFi.softAPIP();
+      // ip = WiFi.softAPIP();
   }
 
-  server = new ESP8266WebServer(80);
-  server->on("/", handleRoot);
-  server->on("/setNames", handleSetNames);
-  server->begin();
-
+  startServer();
   enterPlayerNames();
 }
 
@@ -915,6 +930,8 @@ void startUpOptionSetup(bool wantWifiSetup) {
 void optionSetup() {
   b->buttonLeft.attachLongPressStart(stopTimout);
   b->buttonRight.attachLongPressStart(stopTimout);
+  b->backLeft.attachClick(stopTimout);
+  b->backRight.attachClick(stopTimout);
   askToStartTimout();
 }
 
@@ -959,6 +976,11 @@ void startCount() {
   b->backLeft.attachClick(dclickLeft);
   //b->buttonRight.attachDoubleClick(dclickRight);
   //b->buttonLeft.attachDoubleClick(dclickLeft);
+}
+
+void startCountAndHttpServer() {
+  startServer();
+  startCount();
 }
 
 bool buttonIsPressed() {
