@@ -30,8 +30,8 @@ All text above, and the splash screen must be included in any redistribution
 #define Sprintf(...)
 // #define Sprintf(format, ...) (Serial.printf(format, __VA_ARGS__))
 
-const char* TT_VERSION = "Version: 3";
-const char* ssid = "TTDisplay2";
+const char* TT_VERSION = "Version: 4";
+const char* ssid = "TTDisplay3";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
 HTTPClient http;
@@ -358,10 +358,13 @@ class Score {
             const char * host = "dweet.io";
 
             String base("/dweet/for/");
+            /*
             String uri = base+ssid+"?score="+ssid
                             +urlencode(String("<br><b>"+nameOfPlayerWhoStartedLeft+" - "
                                                        +nameOfPlayerWhoStartedRight+"</b><br/>"
                                                        +getCurentResult(matchIsFinished)));
+            */
+            String uri = base+ssid+"?score="+urlencode(getCurentResult(matchIsFinished));
             Sprintln(String("http://")+host+uri);
 
             http.begin(host, httpPort, uri);
