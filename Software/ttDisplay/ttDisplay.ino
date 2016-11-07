@@ -30,7 +30,7 @@ All text above must be included in any redistribution
 #define Sprintf(...)
 // #define Sprintf(format, ...) (Serial.printf(format, __VA_ARGS__))
 
-const char* TT_VERSION = "Version: 4";
+const char* TT_VERSION = "Version: 5";
 const char* ssid = "TTDisplay3";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
@@ -728,7 +728,8 @@ void showInfoPage() {
 
   if (wantToJoinNetwork) {
       display.println("\nTicker=");
-      display.println("freeboard.io/board/Y25Tan");
+      display.print("dweet.io ");
+      display.println(ssid);
   } else {
       display.println("\nKein Ticker");
       display.println("\nnicht im Netz!");
