@@ -330,7 +330,9 @@ class Score {
             return result;
         }
 
-        result += "| ";
+        if (result.length() > 0) {
+            result += "| ";
+        }
 
         if (playersAreOnTheSideWhereTheyStarted()) {
             return result + left.points + ":" + right.points;
@@ -542,7 +544,27 @@ void showResult() {
 
 void handleRoot() {
 	server->send(200, "text/html", nameOfPlayerWhoStartedLeft + " - " + nameOfPlayerWhoStartedRight
-            + "<font size=\"+2\">" + theScore.getCurentResult(false) +"</font>");
+            + "<font size=\"+2\"> " + theScore.getCurentResult(false) +"</font>");
+}
+
+void handleIncrRight() {
+    theScore.count(theScore.right);
+	server->send(200, "text/html", "Ok");
+}
+
+void handleDecrRight() {
+    theScore.count(theScore.right, -1);
+	server->send(200, "text/html", "Ok");
+}
+
+void handleIncrLeft() {
+    theScore.count(theScore.left);
+	server->send(200, "text/html", "Ok");
+}
+
+void handleDecrLeft() {
+    theScore.count(theScore.left, -1);
+	server->send(200, "text/html", "Ok");
 }
 
 void handleSetNames() {
@@ -783,6 +805,10 @@ void startServer() {
   if (server == NULL) {
     server = new ESP8266WebServer(80);
     server->on("/", handleRoot);
+    server->on("/incrRight", handleIncrRight);
+    server->on("/incrLeft", handleIncrLeft);
+    server->on("/decrRight", handleDecrRight);
+    server->on("/decrLeft", handleDecrLeft);
     server->on("/setNames", handleSetNames);
     server->begin();
   }
