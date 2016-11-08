@@ -567,6 +567,10 @@ void handleDecrLeft() {
 	server->send(200, "text/html", "Ok");
 }
 
+void handleFinishGame() {
+	server->send(200, "text/html", "Ok");
+}
+
 void handleSetNames() {
     nameOfPlayerWhoStartedLeft = server->arg("left");
     Sprintln(String("Name==")+nameOfPlayerWhoStartedLeft);
@@ -810,6 +814,7 @@ void startServer() {
     server->on("/incrLeft", handleIncrLeft);
     server->on("/decrRight", handleDecrRight);
     server->on("/decrLeft", handleDecrLeft);
+    server->on("/finishGame", handleFinishGame);
     server->on("/setNames", handleSetNames);
     server->begin();
   }
