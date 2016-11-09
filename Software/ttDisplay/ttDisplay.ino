@@ -568,7 +568,25 @@ void handleDecrLeft() {
 }
 
 void handleFinishGame() {
+    if (theScore.left.winsGame() || theScore.right.winsGame()) {
+        if (theScore.isLastGame()) {
+            theScore.showResult();
+        } else {
+            theScore.gameOverSwapSide();
+        }
+    }
 	server->send(200, "text/html", "Ok");
+}
+
+void handleSwapSide() {
+    if (theScore.isLastPossibleGame()
+          && (theScore.left.points >= 5 || theScore.right.points >=5)
+          && !theScore.lastGameSideChanged ) {
+        lastGameSwapSide();
+	    server->send(200, "text/html", "Ok");
+        return;
+    }
+	server->send(200, "text/html", "Already swaped side");
 }
 
 void handleSetNames() {
@@ -815,6 +833,7 @@ void startServer() {
     server->on("/decrRight", handleDecrRight);
     server->on("/decrLeft", handleDecrLeft);
     server->on("/finishGame", handleFinishGame);
+    server->on("/swapSide", handleSwapSide);
     server->on("/setNames", handleSetNames);
     server->begin();
   }
