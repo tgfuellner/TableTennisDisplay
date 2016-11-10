@@ -570,9 +570,9 @@ void handleDecrLeft() {
 void handleFinishGame() {
     if (theScore.left.winsGame() || theScore.right.winsGame()) {
         if (theScore.isLastGame()) {
-            theScore.showResult();
+            showResult();
         } else {
-            theScore.gameOverSwapSide();
+            gameOverSwapSide();
         }
     }
 	server->send(200, "text/html", "Ok");
@@ -587,6 +587,49 @@ void handleSwapSide() {
         return;
     }
 	server->send(200, "text/html", "Already swaped side");
+}
+
+void handleCount() {
+
+    String html = R"====(
+<html>
+<head><style>
+.b{
+ height:20ex;
+ width:20ex;
+}
+</style></head>
+<body>
+<p>
+<button class="b" onclick="req('incrRight')">+ Links</button>
+----
+<button class="b" onclick="req('incrLeft')">+ Rechts</button>
+</p><p>
+<button class="b" onclick="req('decrRight')">- Links</button>
+----
+<button class="b" onclick="req('decrLeft')">- Rechts</button>
+</p><p><hr/></p>
+<p>
+<button onclick="req('finishGame')">Satz ist beendet</button>
+<button onclick="req('swapSide')">Seite tauschen</button>
+</p><p><hr/></p>
+<button onclick="req('reset')">Neustart</button>
+<script>
+function req(r) {
+    var t = new Date().getTime();
+    var i = document.createElement("img");
+    i.src = "/"+r+'?t='+t;
+}
+</script>
+</body></html>
+)====";
+
+    server->send(200, "text/html", html);
+}
+
+void handleReset() {
+	server->send(200, "text/html", "Ok");
+    ESP.reset();
 }
 
 void handleSetNames() {
@@ -834,6 +877,8 @@ void startServer() {
     server->on("/decrLeft", handleDecrLeft);
     server->on("/finishGame", handleFinishGame);
     server->on("/swapSide", handleSwapSide);
+    server->on("/count", handleCount);
+    server->on("/reset", handleReset);
     server->on("/setNames", handleSetNames);
     server->begin();
   }
