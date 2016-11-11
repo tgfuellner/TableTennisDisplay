@@ -602,11 +602,11 @@ void handleCount() {
 <body>
 <p>
 <button class="b" onclick="req('incrRight')">+ Links</button>
-----
+&emsp;
 <button class="b" onclick="req('incrLeft')">+ Rechts</button>
 </p><p>
 <button class="b" onclick="req('decrRight')">- Links</button>
-----
+&emsp;
 <button class="b" onclick="req('decrLeft')">- Rechts</button>
 </p><p><hr/></p>
 <p>
