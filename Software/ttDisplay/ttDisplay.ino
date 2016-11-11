@@ -109,7 +109,6 @@ int resultPlayerStartetToServe[MAX_GAMES+1] = {END_MARK};
 void gameOverSwapSide();
 void lastGameSwapSide();
 void startCount();
-void startCountAndHttpServer();
 void showResult();
 void serverSetup();
 
@@ -746,7 +745,7 @@ void serverSetup() {
   showSetupMenu();
   display.display();
 
-  b->buttonLeft.attachClick(startCountAndHttpServer);
+  b->buttonLeft.attachClick(startCount);
   b->buttonRight.attachClick(changeServer);
 }
 
@@ -867,7 +866,7 @@ void enterPlayerNames() {
 
 //////////////////////////////////////
 
-void startServer() {
+void startHttpServer() {
   if (server == NULL) {
     server = new ESP8266WebServer(80);
     server->on("/", handleRoot);
@@ -1074,11 +1073,6 @@ void startCount() {
   //b->buttonLeft.attachDoubleClick(dclickLeft);
 }
 
-void startCountAndHttpServer() {
-  startServer();
-  startCount();
-}
-
 bool buttonIsPressed() {
   if  (digitalRead(D3) == LOW) return true;
   if  (digitalRead(D4) == LOW) return true;
@@ -1124,6 +1118,8 @@ void loop() {
 
     if (server) {
         server->handleClient();
+    } else {
+        startHttpServer();
     }
 
     if (thereIsANewTimoutValue) {
