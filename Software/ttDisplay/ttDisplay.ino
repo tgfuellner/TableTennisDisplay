@@ -23,6 +23,7 @@ All text above must be included in any redistribution
 #include <ESP8266HTTPClient.h>
 #include <Ticker.h>
 
+#include <ArduinoOTA.h>
 
 
 #define Sprintln(a)
@@ -30,7 +31,7 @@ All text above must be included in any redistribution
 #define Sprintf(...)
 // #define Sprintf(format, ...) (Serial.printf(format, __VA_ARGS__))
 
-const char* TT_VERSION = "Version: 5";
+const char* TT_VERSION = "Version: 6";
 const char* ssid = "TTDisplay3";
 const char* password = "12345678";  // set to "" for open access point w/o passwortd
 
@@ -588,6 +589,18 @@ void handleSwapSide() {
 	server->send(200, "text/html", "Already swaped side");
 }
 
+void handleRightServe() {
+    leftStartetToServe = false;
+    startCount();
+	server->send(200, "text/html", "Ok");
+}
+
+void handleLeftServe() {
+    leftStartetToServe = true;
+    startCount();
+	server->send(200, "text/html", "Ok");
+}
+
 void handleCount() {
 
     String html = R"====(
@@ -611,6 +624,8 @@ void handleCount() {
 <p>
 <button onclick="req('finishGame')">Satz ist beendet</button>
 <button onclick="req('swapSide')">Seite tauschen</button>
+<button onclick="req('rightServe')">Links hat ersten Aufschlag</button>
+<button onclick="req('leftServe')">Rechts hat ersten Aufschlag</button>
 </p><p><hr/></p>
 <button onclick="req('reset')">Neustart</button>
 <script>
@@ -878,6 +893,8 @@ void startHttpServer() {
     server->on("/swapSide", handleSwapSide);
     server->on("/count", handleCount);
     server->on("/reset", handleReset);
+    server->on("/rightServe", handleRightServe);
+    server->on("/leftServe", handleLeftServe);
     server->on("/setNames", handleSetNames);
     server->begin();
   }
@@ -915,7 +932,6 @@ void doWifiMode() {
       // ip = WiFi.softAPIP();
   }
 
-  startServer();
   enterPlayerNames();
 }
 
@@ -1082,6 +1098,43 @@ bool buttonIsPressed() {
   return false;
 }
 
+bool initOTA() {
+    static bool isInitialized = false;
+ 
+    if (isInitialized)
+        return true;
+
+    if (WiFi.status() == WL_CONNECTED) {
+        ArduinoOTA.setHostname(ssid);
+
+        ArduinoOTA.onStart([]() {
+          Serial.println("Start");
+        });
+        ArduinoOTA.onEnd([]() {
+          Serial.println("\nEnd");
+        });
+        ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+          Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+        });
+        ArduinoOTA.onError([](ota_error_t error) {
+          Serial.printf("Error[%u]: ", error);
+          if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+          else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+          else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+          else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+          else if (error == OTA_END_ERROR) Serial.println("End Failed");
+        });
+        ArduinoOTA.begin();
+        Serial.println("Ready");
+        Serial.print("IP address: ");
+        Serial.println(WiFi.localIP());
+
+        isInitialized = true;
+    }
+
+    return isInitialized;
+}
+
 void setup()   {                
   Serial.begin(115200);  Sprintln("Start");
 
@@ -1110,6 +1163,10 @@ void setup()   {
 }
 
 void loop() {
+    if (initOTA()) {
+        ArduinoOTA.handle();
+    }
+
     b->buttonRight.tick();
     b->buttonLeft.tick();
     b->backRight.tick();
