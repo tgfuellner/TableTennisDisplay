@@ -883,7 +883,7 @@ void enterPlayerNames() {
 
 void startHttpServer() {
   if (server == NULL) {
-    server = new ESP8266WebServer(80);
+    server = new ESP8266WebServer(8080);
     server->on("/", handleRoot);
     server->on("/incrRight", handleIncrRight);
     server->on("/incrLeft", handleIncrLeft);
