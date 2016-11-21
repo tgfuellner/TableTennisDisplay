@@ -74,8 +74,7 @@ Display for counting Table Tennis Matches
 ## Setup
 ### Menu right after powering the display on
 
-* Join a existing Wifi or make a own AP
-* Enter left and right player at game start
+* Hold back button on Power on: Join a existing Wifi or make a own AP
 * Which side serves first
 
 ### Menu after long button press
