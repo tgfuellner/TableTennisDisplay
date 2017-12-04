@@ -84,3 +84,8 @@ Display for counting Table Tennis Matches
  * 4 of 7
  * 5 of 9
 * LED Brightness
+
+## Installation
+* Arduino
+* https://github.com/esp8266/Arduino with Boardmanager
+ * Boards manager link: http://arduino.esp8266.com/stable/package_esp8266com_index.json
