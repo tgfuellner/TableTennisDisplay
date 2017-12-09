@@ -84,3 +84,27 @@ Display for counting Table Tennis Matches
  * 4 of 7
  * 5 of 9
 * LED Brightness
+
+## HTTP
+### Remote control over Wifi
+
+* Press an hold right back button an power the Display on
+* Choose own Network not connected to internet
+* Join the Wifi Network created by the Display
+ * The Name is e.g. TTDisplay3
+ * Ip of Display is 192.168.4.1
+* There are following actions:
+ * http://192.168.4.1:8080/
+ * http://192.168.4.1:8080/incrRight
+ * http://192.168.4.1:8080/incrLeft
+ * http://192.168.4.1:8080/decrRight
+ * http://192.168.4.1:8080/decrLeft
+ * http://192.168.4.1:8080/finishGame
+ * http://192.168.4.1:8080/swapSide
+ * http://192.168.4.1:8080/count
+ * http://192.168.4.1:8080/reset
+ * http://192.168.4.1:8080/rightServe
+ * http://192.168.4.1:8080/leftServe
+ * http://192.168.4.1:8080/setNames
+
+
