@@ -108,3 +108,7 @@ Display for counting Table Tennis Matches
  * http://192.168.4.1:8080/setNames
 
 
+## Installation
+* Arduino
+* https://github.com/esp8266/Arduino with Boardmanager
+ * Boards manager link: http://arduino.esp8266.com/stable/package_esp8266com_index.json
